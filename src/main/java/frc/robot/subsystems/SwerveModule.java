@@ -83,7 +83,6 @@ public class SwerveModule {
         m_chassisAngularOffset = chassisAngularOffset;
 
         this.m_moduleLocation = m_moduleLocation;
-
     }
 
     public SwerveModuleState getState() {
@@ -106,5 +105,4 @@ public class SwerveModule {
 
         m_targetState = desiredState;
     }
-
 }

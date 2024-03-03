@@ -6,10 +6,15 @@ package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.DefaultDrive;
+import frc.robot.subsystems.Indexing;
+import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveSubsystem;
+import frc.robot.subsystems.Wrist;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
-import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
+// import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 
@@ -23,8 +28,14 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   public static final SwerveSubsystem m_Swerb = new SwerveSubsystem();
 
+  public static final Intake m_intake = new Intake();
+  public static final Indexing m_indexing = new Indexing();
+  public static final Shooter m_shooter = new Shooter();
+  public static final Wrist m_wrist = new Wrist();
+
   // Replace with CommandPS4Controller or CommandJoystick if needed
-  public static CommandJoystick commandJoystick = new CommandJoystick(OperatorConstants.kDriverControllerPort);
+  // public static CommandJoystick commandJoystick = new CommandJoystick(OperatorConstants.kDriverControllerPort);
+  public static CommandXboxController driverXbox = new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -43,7 +54,35 @@ public class RobotContainer {
    */
   private void configureBindings() {
     m_Swerb.setDefaultCommand(new DefaultDrive());
-    commandJoystick.button(4).onTrue(new InstantCommand(() -> m_Swerb.zeroYaw()));
+    // commandJoystick.button(4)
+    driverXbox.y()
+      .onTrue(new InstantCommand(() -> m_Swerb.zeroYaw()));
+    
+    // for intake (manual)
+    driverXbox.a()
+    .onTrue(Commands.runOnce(() -> {
+      m_intake.intake();
+      m_indexing.intake();
+    }))
+    .onFalse(Commands.runOnce(() -> {
+      m_intake.stop();
+      m_indexing.stop();
+    }));
+
+    // for shooting (manual)
+    driverXbox.b()
+    .onTrue(Commands.runOnce(() -> {
+      m_indexing.shoot();
+      m_shooter.shoot();
+    }))
+    .onFalse(Commands.runOnce(() -> {
+      m_indexing.stop();
+      m_shooter.stop();
+    }));
+    
+    // for aiming
+    driverXbox.leftBumper().onTrue(m_wrist.incrementUp());
+    driverXbox.rightBumper().onTrue(m_wrist.incrementDown());
 
     /*
      * CONTROLLER CHANNELS

@@ -6,6 +6,9 @@ package frc.robot;
 
 import edu.wpi.first.math.geometry.Translation2d;
 
+import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
+import edu.wpi.first.math.util.Units;
+
 /**
  * The Constants class provides a convenient place for teams to hold robot-wide numerical or boolean
  * constants. This class should not be used for any other purpose. All constants should be declared
@@ -77,5 +80,129 @@ public final class Constants {
      */
     public static final double kXYSlewRate = 2.0;
     public static final double kRotationalSlewRate = 2.0;
+
+    // Chassis configuration
+    public static final double kTrackWidth = Units.inchesToMeters(12.5);
+    // Distance between centers of right and left wheels on robot
+    public static final double kWheelBase = Units.inchesToMeters(12.5);
+    // Distance between front and back wheels on robot
+    public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
+      new Translation2d(kWheelBase / 2, kTrackWidth / 2),
+      new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
+      new Translation2d(-kWheelBase / 2, kTrackWidth / 2),
+      new Translation2d(-kWheelBase / 2, -kTrackWidth / 2));
+  }
+
+  /** Constants for the Intake Subsystem */
+  public static final class IntakeConstants {
+    // CAN IDs
+    public static final int kIntakeCanId = 20;
+
+    // MEASUREMENTS !!!!!!!!! NOT FINAL
+    public static final double kWheelDiameter = 4.0 / 12.0; // meters
+
+    // UNIT CONVERSION
+    public static final double kEncoderPositionFactor = kWheelDiameter * Math.PI; // meters
+    public static final double kEncoderVelocityFactor = (kWheelDiameter * Math.PI) / 60.0; // meters per second
+
+    // PID tuning
+    public static final double kP  = 1;
+    public static final double kI  = 0;
+    public static final double kD  = 0;
+    public static final double kFF = 0;
+  }
+
+  /** Constants for the Indexing Subsystem */
+  public static final class IndexingConstants {
+    // CAN IDs
+    public static final int kLeftCanId = 21;
+    public static final int kRightCanId = 22;
+
+    // MEASUREMENTS !!!!!!!!! NOT FINAL
+    public static final double kWheelDiameter = 3.0 / 12.0; // meters
+
+    // UNIT CONVERSION
+    public static final double kLeftEncoderPositionFactor = kWheelDiameter * Math.PI; // meters
+    public static final double kLeftEncoderVelocityFactor = (kWheelDiameter * Math.PI) / 60.0; // meters per second
+
+    public static final double kRightEncoderPositionFactor = kLeftEncoderPositionFactor; // meters
+    public static final double kRightEncoderVelocityFactor = kLeftEncoderVelocityFactor; // meters per second
+
+    // PID tuning
+    public static final double kP  = 1;
+    public static final double kI  = 0;
+    public static final double kD  = 0;
+    public static final double kFF = 0;
+  }
+
+  /** Constants for the Shooter Subsystem */
+  public static final class ShooterConstants {
+    // CAN IDs
+    public static final int kAimingCanId = 23;
+
+    public static final int kBottomCanId = 24;
+    public static final int kTopCanId = 25;
+
+    // MEASUREMENTS
+    public static final double kBottomWheelDiameter = 3.0 / 12.0; // meters
+    public static final double kTopWheelDiameter    = 4.0 / 12.0; // meters
+
+    // UNIT CONVERSION
+    public static final double kBottomEncoderPositionFactor = kBottomWheelDiameter * Math.PI; // meters
+    public static final double kBottomEncoderVelocityFactor = (kBottomWheelDiameter * Math.PI) / 60.0; // meters per second
+
+    public static final double kTopEncoderPositionFactor = kTopWheelDiameter * Math.PI; // meters
+    public static final double kTopEncoderVelocityFactor = (kTopWheelDiameter * Math.PI) / 60.0; // meters per second
+
+    // PID tuning
+    public static final double kBottomP  = 1;
+    public static final double kBottomI  = 0;
+    public static final double kBottomD  = 0;
+    public static final double kBottomFF = 0;
+
+    public static final double kTopP  = 1;
+    public static final double kTopI  = 0;
+    public static final double kTopD  = 0;
+    public static final double kTopFF = 0;
+  }
+
+  /** Constants for the Wrist Constants */
+  public static final class WristConstants {
+    // CAN IDs
+    public static final int kArmCanId = 30;
+
+    // THROUGHBORE ENCODER
+    public static final int kCountsPerRev = 8192;
+
+    // UNIT CONVERSION
+    public static final double kEncoderPositionFactor = (2 * Math.PI); // radians
+    public static final double kEncoderVelocityFactor = (2 * Math.PI) / 60.0; // radians per second
+    
+    // // PID tuning
+    // public static final double kP = 1;
+    // public static final double kI = 0;
+    // public static final double kD = 0;
+    // public static final double kFF = 0;
+
+    // These are fake gains; in actuality these must be determined individually for each robot
+    public static final double kSVolts = 1;
+    public static final double kGVolts = 1;
+    public static final double kVVoltSecondPerRad = 0.5;
+    public static final double kAVoltSecondSquaredPerRad = 0.1;
+
+    public static final double kMaxVelocityRadPerSecond = 3;
+    public static final double kMaxAccelerationRadPerSecSquared = 1; // TODO
+    
+    // The offset of the arm from the horizontal in its neutral position,
+    // measured from the horizontal
+    public static final double kWristOffsetRads = 0.5;
+  }
+
+  public static final class MotorContants {
+    public static final double kArmSpeed      = 0.5; // meters per second
+    public static final double kIntakeSpeed   = 1.0; // meters per second
+    public static final double kShootingSpeed = 10.0; // meters per second
+
+    public static final int kMotorCurrentLimit = 50; // amps
   }
 }
