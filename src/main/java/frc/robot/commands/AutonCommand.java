@@ -43,7 +43,8 @@ public class AutonCommand extends SequentialCommandGroup {
             //     indexing.stop();
             // })
             // )
-            );
+            driveSubsystem.run(() -> driveSubsystem.drive(new ChassisSpeeds(0, 0.25, 0))).withTimeout(5)
+        );
     }
 
 }

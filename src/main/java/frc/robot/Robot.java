@@ -4,6 +4,9 @@
 
 package frc.robot;
 
+import com.revrobotics.CANSparkMax;
+import com.revrobotics.CANSparkLowLevel.MotorType;
+
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
@@ -87,6 +90,13 @@ public class Robot extends TimedRobot {
   public void testInit() {
     // Cancels all running commands at the start of test mode.
     CommandScheduler.getInstance().cancelAll();
+
+    //CANSparkMax shooter1 = new CANSparkMax(24, MotorType.kBrushless);
+    //CANSparkMax shooter2 = new CANSparkMax(25, MotorType.kBrushless);
+
+    //shooter1.set(-0.5);
+    //shooter2.set(0.67);
+    
   }
 
   /** This function is called periodically during test mode. */

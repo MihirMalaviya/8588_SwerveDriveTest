@@ -3,6 +3,7 @@ package frc.robot.commands;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -33,14 +34,20 @@ SlewRateLimiter wRateLimiter = new SlewRateLimiter(DriveConstants.kRotationalSle
         double maxSpeed = Constants.DriveConstants.kMaxLinearSpeed;
         double vx = joystick.getRawAxis(0) * maxSpeed;
         double vy = joystick.getRawAxis(1) * maxSpeed;
-        double vw = joystick.getRawAxis(4);
+        double vw = joystick.getRawAxis(4) * 0.1;
         
         // Apply slew rate limits
         vx = xRateLimiter.calculate(vx);
         vy = yRateLimiter.calculate(vy);
         vw = wRateLimiter.calculate(vw);
 
-        ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vx, vy, vw, Rotation2d.fromDegrees(m_Swerb.getYaw()));
+
+        SmartDashboard.putNumber("VX", vx);
+        SmartDashboard.putNumber("VY", vy);
+        SmartDashboard.putNumber("Vw", vw);
+
+        //ChassisSpeeds speeds = new ChassisSpeeds(vy, vx, vw);
+        ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-m_Swerb.getYaw()));
         m_Swerb.drive(speeds);
     }
 

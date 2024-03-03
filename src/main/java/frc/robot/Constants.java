@@ -60,10 +60,10 @@ public final class Constants {
     public static final Translation2d kBackRightLocation = new Translation2d(-kWheelOffset, -kWheelOffset);
     public static final Translation2d kBackLeftLocation = new Translation2d(-kWheelOffset, kWheelOffset);
   
-    public static final double kFrontLeftAngularOffset = 0;
-    public static final double kFrontRightAngularOffset = Math.PI / 2;
-    public static final double kBackRightAngularOffset = Math.PI;
-    public static final double kBackLeftAngularOffset = 3 * Math.PI / 2;
+    public static final double kFrontLeftAngularOffset = Math.PI / 2;
+    public static final double kFrontRightAngularOffset = Math.PI;
+    public static final double kBackRightAngularOffset = 3 * Math.PI / 2;
+    public static final double kBackLeftAngularOffset = 0;
 
     public static final double kAnglePositionConversionFactor = 2 * Math.PI; // (0 - 1) to (0 - 2pi)
     public static final double kAngleVelocityConversionFactor = (2 * Math.PI) / 60.0;
@@ -78,7 +78,7 @@ public final class Constants {
      * The value of the slew rate limiter is the number of units to change per second. For example,
      * a value of 2.0 means that it takes 0.5 seconds (1/2) to get from 0 to 1.
      */
-    public static final double kXYSlewRate = 2.0;
+    public static final double kXYSlewRate = 4.0;
     public static final double kRotationalSlewRate = 2.0;
 
     // Chassis configuration
@@ -107,6 +107,8 @@ public final class Constants {
 
     // PID tuning
     public static final double kP  = 1;
+
+
     public static final double kI  = 0;
     public static final double kD  = 0;
     public static final double kFF = 0;
