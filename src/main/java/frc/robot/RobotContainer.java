@@ -6,11 +6,18 @@ package frc.robot;
 
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.commands.DefaultDrive;
+import frc.robot.commands.IntakeCommand;
+import frc.robot.commands.PurgeCommand;
+import frc.robot.commands.ShootCommand;
 import frc.robot.subsystems.Indexing;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.Wrist;
+import frc.robot.utils.LookupTable;
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
@@ -37,10 +44,35 @@ public class RobotContainer {
   // public static CommandJoystick commandJoystick = new CommandJoystick(OperatorConstants.kDriverControllerPort);
   public static CommandXboxController driverXbox = new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
+  public static final IntakeCommand intakeCommand = new IntakeCommand(m_intake, m_indexing);
+  public static final ShootCommand shootCommand = new ShootCommand(m_indexing, m_shooter);
+  public static final PurgeCommand purgeCommand = new PurgeCommand(m_intake, m_indexing, m_shooter);
+
+  DoubleLogEntry shotDistance; // meters
+  DoubleLogEntry shotAngle; // radians
+
+  // hardcoded lookup tables
+  private LookupTable speakerLookupTable = new LookupTable(
+    new double[] {1, 2, 3, 4, 5}, // radians
+    new double[] {1, 2, 3, 4, 5}  // meters
+  );
+  private LookupTable ampLookupTable = new LookupTable(
+    new double[] {1, 2, 3, 4, 5}, // radians
+    new double[] {1, 2, 3, 4, 5}  // meters
+  );
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
     configureBindings();
+
+    // Starts recording to data log
+    DataLogManager.start();
+
+    // Set up custom log entries
+    DataLog log = DataLogManager.getLog();
+    shotDistance = new DoubleLogEntry(log, "/shots/distance");
+    shotAngle = new DoubleLogEntry(log, "/shots/angle");
   }
 
   /**
@@ -57,32 +89,41 @@ public class RobotContainer {
     // commandJoystick.button(4)
     driverXbox.y()
       .onTrue(new InstantCommand(() -> m_Swerb.zeroYaw()));
-    
-    // for intake (manual)
-    driverXbox.a()
-    .onTrue(Commands.runOnce(() -> {
-      m_intake.intake();
-      m_indexing.intake();
-    }))
-    .onFalse(Commands.runOnce(() -> {
-      m_intake.stop();
-      m_indexing.stop();
-    }));
 
-    // for shooting (manual)
+    driverXbox.a()
+      .onTrue(intakeCommand);
+    
     driverXbox.b()
-    .onTrue(Commands.runOnce(() -> {
-      m_indexing.shoot();
-      m_shooter.shoot();
-    }))
-    .onFalse(Commands.runOnce(() -> {
-      m_indexing.stop();
-      m_shooter.stop();
-    }));
+      .onTrue(shootCommand);
+    
+    driverXbox.x()
+      .onTrue(purgeCommand);
+    
+    // // for intake (manual)
+    // driverXbox.a()
+    // .onTrue(Commands.runOnce(() -> {
+    //   m_intake.intake();
+    //   m_indexing.intake();
+    // }))
+    // .onFalse(Commands.runOnce(() -> {
+    //   m_intake.stop();
+    //   m_indexing.stop();
+    // }));
+
+    // // for shooting (manual)
+    // driverXbox.b()
+    // .onTrue(Commands.runOnce(() -> {
+    //   m_indexing.shoot();
+    //   m_shooter.shoot();
+    // }))
+    // .onFalse(Commands.runOnce(() -> {
+    //   m_indexing.stop();
+    //   m_shooter.stop();
+    // }));
     
     // for aiming
-    driverXbox.leftBumper().onTrue(m_wrist.incrementUp());
-    driverXbox.rightBumper().onTrue(m_wrist.incrementDown());
+    // driverXbox.leftBumper().onTrue(m_wrist.incrementUp());
+    // driverXbox.rightBumper().onTrue(m_wrist.incrementDown());
 
     /*
      * CONTROLLER CHANNELS

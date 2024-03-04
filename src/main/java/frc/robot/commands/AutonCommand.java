@@ -26,24 +26,13 @@ public class AutonCommand extends SequentialCommandGroup {
     ) {
         addRequirements(driveSubsystem);
         
-        final double fwdSpeed = 0.5; // idk
-        // final double fwdTime = 2.0; // seconds
-        // final double rotSpeed = 0.2; // radians
-        // final double rotTime = 0.5; // seconds
-        final double distance = 2.0;
-        final double aimAngle = 60;
+        final double fwdSpeed = 0.25; // meters per second
+        final double distance = 1.25; // distance
 
         addCommands(
             // Reset encoders
             // new InstantCommand(driveSubsystem::resetEncoders),
-
-            // new ParallelCommandGroup(
-            //     Commands.runOnce(()->{
-            //     intake.stop();
-            //     indexing.stop();
-            // })
-            // )
-            driveSubsystem.run(() -> driveSubsystem.drive(new ChassisSpeeds(0, 0.25, 0))).withTimeout(5)
+            driveSubsystem.run(() -> driveSubsystem.drive(new ChassisSpeeds(0, 0.25, 0))).withTimeout(fwdSpeed/distance)
         );
     }
 

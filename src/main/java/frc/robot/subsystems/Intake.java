@@ -36,14 +36,11 @@ public class Intake extends SubsystemBase {
   private RelativeEncoder m_intakeEncoder;
   private SparkPIDController m_intakePIDController;
 
-  // Mutable holder for unit-safe voltage values, persisted to avoid reallocation.
-  private final MutableMeasure<Voltage> m_appliedVoltage = mutable(Volts.of(0));
-  // Mutable holder for unit-safe linear distance values, persisted to avoid reallocation.
-  private final MutableMeasure<Distance> m_distance = mutable(Meters.of(0));
-  // Mutable holder for unit-safe linear velocity values, persisted to avoid reallocation.
-  private final MutableMeasure<Velocity<Distance>> m_velocity = mutable(MetersPerSecond.of(0));
+  // private final MutableMeasure<Voltage> m_appliedVoltage = mutable(Volts.of(0));
+  // private final MutableMeasure<Distance> m_distance = mutable(Meters.of(0));
+  // private final MutableMeasure<Velocity<Distance>> m_velocity = mutable(MetersPerSecond.of(0));
 
-  SysIdRoutine routine;
+  // SysIdRoutine routine;
 
   public Intake() {
     this.m_intake = new CANSparkMax(IntakeConstants.kIntakeCanId, CANSparkLowLevel.MotorType.kBrushless);
@@ -56,15 +53,24 @@ public class Intake extends SubsystemBase {
     m_intakePIDController = m_intake.getPIDController();
     m_intakePIDController.setFeedbackDevice(m_intakeEncoder);
 
+    // m_intakePIDController.setReference(0, null, 0, 0, null)
+
     m_intakeEncoder.setPositionConversionFactor(IntakeConstants.kEncoderPositionFactor);
     m_intakeEncoder.setVelocityConversionFactor(IntakeConstants.kEncoderVelocityFactor);
 
-    m_intakePIDController.setP( IntakeConstants.kP);
-    m_intakePIDController.setI( IntakeConstants.kI);
-    m_intakePIDController.setD( IntakeConstants.kD);
-    m_intakePIDController.setFF(IntakeConstants.kFF);
-    // m_intakePIDController.setOutputRange(IntakeConstants.kIntakeMinOutput, IntakeConstants.kIntakeMaxOutput);
-    m_intakePIDController.setOutputRange(-1, 1);
+    m_intakePIDController.setP( IntakeConstants.kP ,0);
+    m_intakePIDController.setI( IntakeConstants.kI ,0);
+    m_intakePIDController.setD( IntakeConstants.kD ,0);
+    m_intakePIDController.setFF(IntakeConstants.kFF,0);
+    // m_intakePIDController.setOutputRange(IntakeConstants.kIntakeMinOutput, IntakeConstants.kIntakeMaxOutput, 0);
+    m_intakePIDController.setOutputRange(-1, 1, 0);
+
+    // second slot
+    m_intakePIDController.setP( IntakeConstants.kP ,1);
+    m_intakePIDController.setI( IntakeConstants.kI ,1);
+    m_intakePIDController.setD( IntakeConstants.kD ,1);
+    m_intakePIDController.setFF(IntakeConstants.kFF,1);
+    m_intakePIDController.setOutputRange(-1, 1, 1);
 
     setCoast();
     m_intake.setSmartCurrentLimit(MotorContants.kMotorCurrentLimit);
@@ -76,26 +82,26 @@ public class Intake extends SubsystemBase {
 
     setCoast();
 
-    // Creates a SysIdRoutine
-    routine = new SysIdRoutine(
-      new SysIdRoutine.Config(),
-      new SysIdRoutine.Mechanism(this::voltageIntake, 
-          log -> {
-          log.motor("intake")
-              .voltage(
-                  m_appliedVoltage.mut_replace(
-                    m_intake.get() * RobotController.getBatteryVoltage(), Volts))
-              .linearPosition(m_distance.mut_replace(m_intake.getEncoder().getPosition(), Meters))
-              .linearVelocity(
-                  m_velocity.mut_replace(m_intake.getEncoder().getVelocity(), MetersPerSecond));
-          },
-      this
-    ));
+    // // Creates a SysIdRoutine
+    // routine = new SysIdRoutine(
+    //   new SysIdRoutine.Config(),
+    //   new SysIdRoutine.Mechanism(this::voltageIntake, 
+    //       log -> {
+    //       log.motor("intake")
+    //           .voltage(
+    //               m_appliedVoltage.mut_replace(
+    //                 m_intake.get() * RobotController.getBatteryVoltage(), Volts))
+    //           .linearPosition(m_distance.mut_replace(m_intake.getEncoder().getPosition(), Meters))
+    //           .linearVelocity(
+    //               m_velocity.mut_replace(m_intake.getEncoder().getVelocity(), MetersPerSecond));
+    //       },
+    //   this
+    // ));
   }
 
-  private void voltageIntake(Measure<Voltage> volts){
-    m_intake.setVoltage(volts.in(Volts));
-  }
+  // private void voltageIntake(Measure<Voltage> volts){
+  //   m_intake.setVoltage(volts.in(Volts));
+  // }
 
   /** sets intake idlemode to brake */
   public void setBrake() {
@@ -107,12 +113,29 @@ public class Intake extends SubsystemBase {
     m_intake.setIdleMode(CANSparkMax.IdleMode.kCoast);
   }
 
+  public double getCurrent() {
+    return m_intake.getOutputCurrent();
+  }
+
+  /** should return motor velocity in meters */
+  public double getVelocity() {
+    return m_intakeEncoder.getVelocity();
+  }
+
   /** move intake motor to suck the note in */
   public void intake() {
     SmartDashboard.putString("Intake State", "intake");
 
     // m_intake.set(.8);
-    m_intakePIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
+    m_intakePIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
+  }
+
+  /** move intake motor to suck the note in */
+  public void intakeDistance(double distance) {
+    SmartDashboard.putString("Intake State", "intake-distance");
+
+    // m_intake.set(.8);
+    m_intakePIDController.setReference(distance, CANSparkMax.ControlType.kPosition, 1);
   }
 
   /** stop intake motor */
@@ -120,7 +143,7 @@ public class Intake extends SubsystemBase {
     SmartDashboard.putString("Intake State", "stop");
 
     // m_intake.set(0);
-    m_intakePIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
+    m_intakePIDController.setReference(0, CANSparkMax.ControlType.kVelocity, 0);
   }
   
   // /** move intake motor to push the note out */
@@ -129,7 +152,7 @@ public class Intake extends SubsystemBase {
   //   SmartDashboard.putString("Intake State", "Out");
 
   //   m_intake.set(-.8);
-  //   // m_intakePIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
+  //   // m_intakePIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
   // }
 
   @Override
@@ -137,13 +160,15 @@ public class Intake extends SubsystemBase {
     SmartDashboard.putNumber("Intake Encoder Position", m_intakeEncoder.getPosition());
     SmartDashboard.putNumber("Intake Encoder Velocity", m_intakeEncoder.getVelocity());
     SmartDashboard.putNumber("Intake Temp", m_intake.getMotorTemperature());
-  }
-  
-  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-    return routine.quasistatic(direction);
-  }
 
-  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-    return routine.dynamic(direction);
-  }
+    SmartDashboard.putNumber("Intake Current", getCurrent());
+  } 
+  
+  // public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+  //   return routine.quasistatic(direction);
+  // }
+
+  // public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+  //   return routine.dynamic(direction);
+  // }
 }

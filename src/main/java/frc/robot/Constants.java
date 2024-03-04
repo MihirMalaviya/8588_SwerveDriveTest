@@ -80,17 +80,6 @@ public final class Constants {
      */
     public static final double kXYSlewRate = 4.0;
     public static final double kRotationalSlewRate = 2.0;
-
-    // Chassis configuration
-    public static final double kTrackWidth = Units.inchesToMeters(12.5);
-    // Distance between centers of right and left wheels on robot
-    public static final double kWheelBase = Units.inchesToMeters(12.5);
-    // Distance between front and back wheels on robot
-    public static final SwerveDriveKinematics kDriveKinematics = new SwerveDriveKinematics(
-      new Translation2d(kWheelBase / 2, kTrackWidth / 2),
-      new Translation2d(kWheelBase / 2, -kTrackWidth / 2),
-      new Translation2d(-kWheelBase / 2, kTrackWidth / 2),
-      new Translation2d(-kWheelBase / 2, -kTrackWidth / 2));
   }
 
   /** Constants for the Intake Subsystem */
@@ -120,12 +109,13 @@ public final class Constants {
     public static final int kLeftCanId = 21;
     public static final int kRightCanId = 22;
 
-    // MEASUREMENTS !!!!!!!!! NOT FINAL
+    // MEASUREMENTS
     public static final double kWheelDiameter = 3.0 / 12.0; // meters
+    public static final double kGearRatio = 1.0 / 16.0; // 16:1 gear ratio
 
     // UNIT CONVERSION
-    public static final double kLeftEncoderPositionFactor = kWheelDiameter * Math.PI; // meters
-    public static final double kLeftEncoderVelocityFactor = (kWheelDiameter * Math.PI) / 60.0; // meters per second
+    public static final double kLeftEncoderPositionFactor =  kWheelDiameter * Math.PI * kGearRatio; // meters
+    public static final double kLeftEncoderVelocityFactor = (kWheelDiameter * Math.PI * kGearRatio) / 60.0; // meters per second
 
     public static final double kRightEncoderPositionFactor = kLeftEncoderPositionFactor; // meters
     public static final double kRightEncoderVelocityFactor = kLeftEncoderVelocityFactor; // meters per second
@@ -139,9 +129,6 @@ public final class Constants {
 
   /** Constants for the Shooter Subsystem */
   public static final class ShooterConstants {
-    // CAN IDs
-    public static final int kAimingCanId = 23;
-
     public static final int kBottomCanId = 24;
     public static final int kTopCanId = 25;
 
@@ -171,7 +158,7 @@ public final class Constants {
   /** Constants for the Wrist Constants */
   public static final class WristConstants {
     // CAN IDs
-    public static final int kArmCanId = 30;
+    public static final int kArmCanId = 23;
 
     // THROUGHBORE ENCODER
     public static final int kCountsPerRev = 8192;
@@ -204,6 +191,9 @@ public final class Constants {
     public static final double kArmSpeed      = 0.5; // meters per second
     public static final double kIntakeSpeed   = 1.0; // meters per second
     public static final double kShootingSpeed = 10.0; // meters per second
+    
+    public static final double kIntakeDistance   = 1.0; // meters
+    public static final double kIndexingDistance = 0.5; // meters
 
     public static final int kMotorCurrentLimit = 50; // amps
   }

@@ -14,6 +14,7 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import com.kauailabs.navx.frc.AHRS;
@@ -45,7 +46,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   // Odometry class for tracking robot pose
   SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
-    DriveConstants.kDriveKinematics,
+    m_DriveKinematics,
     Rotation2d.fromDegrees(ahrs.getAngle()),
     new SwerveModulePosition[] {
         m_frontLeftModule.getPosition(),
@@ -66,7 +67,6 @@ public class SwerveSubsystem extends SubsystemBase {
   public void zeroYaw() {
     ahrs.zeroYaw();
   }
-  
 
   public void drive(ChassisSpeeds chassisSpeeds) {
 
@@ -81,7 +81,6 @@ public class SwerveSubsystem extends SubsystemBase {
     m_backLeftModule.setDesiredState(states[3]);
     
     // ChassisSpeeds adjSpeeds = new ChassisSpeeds()
-    
   }
 
   /**

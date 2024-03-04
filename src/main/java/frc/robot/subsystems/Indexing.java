@@ -40,14 +40,11 @@ public class Indexing extends SubsystemBase {
   private SparkPIDController m_leftPIDController;
   private SparkPIDController m_rightPIDController;
 
-  // Mutable holder for unit-safe voltage values, persisted to avoid reallocation.
-  private final MutableMeasure<Voltage> m_appliedVoltage = mutable(Volts.of(0));
-  // Mutable holder for unit-safe linear distance values, persisted to avoid reallocation.
-  private final MutableMeasure<Distance> m_distance = mutable(Meters.of(0));
-  // Mutable holder for unit-safe linear velocity values, persisted to avoid reallocation.
-  private final MutableMeasure<Velocity<Distance>> m_velocity = mutable(MetersPerSecond.of(0));
+  // private final MutableMeasure<Voltage> m_appliedVoltage = mutable(Volts.of(0));
+  // private final MutableMeasure<Distance> m_distance = mutable(Meters.of(0));
+  // private final MutableMeasure<Velocity<Distance>> m_velocity = mutable(MetersPerSecond.of(0));
 
-  SysIdRoutine routine;
+  // SysIdRoutine routine;
 
   public Indexing() {
     m_left = new CANSparkMax(IndexingConstants.kLeftCanId, CANSparkLowLevel.MotorType.kBrushless);
@@ -74,17 +71,29 @@ public class Indexing extends SubsystemBase {
     m_rightEncoder.setPositionConversionFactor(IndexingConstants.kRightEncoderPositionFactor);
     m_rightEncoder.setVelocityConversionFactor(IndexingConstants.kRightEncoderVelocityFactor);
 
-    m_leftPIDController.setP(IndexingConstants.kP);
-    m_leftPIDController.setI(IndexingConstants.kI);
-    m_leftPIDController.setD(IndexingConstants.kD);
-    m_leftPIDController.setFF(IndexingConstants.kFF);
-    m_leftPIDController.setOutputRange(-1, 1);
+    m_leftPIDController.setP(IndexingConstants.kP  ,0);
+    m_leftPIDController.setI(IndexingConstants.kI  ,0);
+    m_leftPIDController.setD(IndexingConstants.kD  ,0);
+    m_leftPIDController.setFF(IndexingConstants.kFF,0);
+    m_leftPIDController.setOutputRange(-1, 1,0);
     
-    m_rightPIDController.setP(IndexingConstants.kP);
-    m_rightPIDController.setI(IndexingConstants.kI);
-    m_rightPIDController.setD(IndexingConstants.kD);
-    m_rightPIDController.setFF(IndexingConstants.kFF);
-    m_rightPIDController.setOutputRange(-1, 1);
+    m_rightPIDController.setP(IndexingConstants.kP  ,0);
+    m_rightPIDController.setI(IndexingConstants.kI  ,0);
+    m_rightPIDController.setD(IndexingConstants.kD  ,0);
+    m_rightPIDController.setFF(IndexingConstants.kFF,0);
+    m_rightPIDController.setOutputRange(-1, 1,0);
+    
+    m_leftPIDController.setP(IndexingConstants.kP  ,1);
+    m_leftPIDController.setI(IndexingConstants.kI  ,1);
+    m_leftPIDController.setD(IndexingConstants.kD  ,1);
+    m_leftPIDController.setFF(IndexingConstants.kFF,1);
+    m_leftPIDController.setOutputRange(-1, 1,1);
+    
+    m_rightPIDController.setP(IndexingConstants.kP  ,1);
+    m_rightPIDController.setI(IndexingConstants.kI  ,1);
+    m_rightPIDController.setD(IndexingConstants.kD  ,1);
+    m_rightPIDController.setFF(IndexingConstants.kFF,1);
+    m_rightPIDController.setOutputRange(-1, 1,1);
 
     setCoast();
     m_left.setSmartCurrentLimit(MotorContants.kMotorCurrentLimit);
@@ -101,26 +110,34 @@ public class Indexing extends SubsystemBase {
     // Additional initialization stuff here if needed
     setCoast();
     
-    // Creates a SysIdRoutine
-    routine = new SysIdRoutine(
-      new SysIdRoutine.Config(),
-      new SysIdRoutine.Mechanism(this::voltageIndexing, 
-          log -> {
-          log.motor("indexing")
-              .voltage(
-                  m_appliedVoltage.mut_replace(
-                    m_left.get() * RobotController.getBatteryVoltage(), Volts))
-              .linearPosition(m_distance.mut_replace(m_left.getEncoder().getPosition(), Meters))
-              .linearVelocity(
-                  m_velocity.mut_replace(m_left.getEncoder().getVelocity(), MetersPerSecond));
-          },
-      this
-    ));
+    // // Creates a SysIdRoutine
+    // routine = new SysIdRoutine(
+    //   new SysIdRoutine.Config(),
+    //   new SysIdRoutine.Mechanism(this::voltageIndexing, 
+    //       log -> {
+    //       log.motor("indexing")
+    //           .voltage(
+    //               m_appliedVoltage.mut_replace(
+    //                 m_left.get() * RobotController.getBatteryVoltage(), Volts))
+    //           .linearPosition(m_distance.mut_replace(m_left.getEncoder().getPosition(), Meters))
+    //           .linearVelocity(
+    //               m_velocity.mut_replace(m_left.getEncoder().getVelocity(), MetersPerSecond));
+    //       },
+    //   this
+    // ));
   }
 
-  private void voltageIndexing(Measure<Voltage> volts){
-    m_left.setVoltage(volts.in(Volts));
-    m_right.setVoltage(-volts.in(Volts));
+  // private void voltageIndexing(Measure<Voltage> volts){
+  //   m_left.setVoltage(volts.in(Volts));
+  //   m_right.setVoltage(-volts.in(Volts));
+  // }
+
+  public double getCurrent() {
+    return m_right.getOutputCurrent();
+  }
+
+  public double getVelocity() {
+    return m_rightEncoder.getVelocity();
   }
 
   public void setBrake() {
@@ -139,8 +156,15 @@ public class Indexing extends SubsystemBase {
     // m_left.set(.8);
     // m_right.set(.8);
 
-    m_leftPIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
-    m_rightPIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
+    m_leftPIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
+    m_rightPIDController.setReference(MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
+  }
+  
+  public void intakeDistance(double distance) {
+    SmartDashboard.putString("Intake State", "intake-distance");
+
+    m_leftPIDController.setReference(distance, CANSparkMax.ControlType.kPosition, 1);
+    m_rightPIDController.setReference(distance, CANSparkMax.ControlType.kPosition, 1);
   }
 
   /** move index motors to push the note out */
@@ -150,8 +174,8 @@ public class Indexing extends SubsystemBase {
     // m_left.set(-.8);
     // m_right.set(-.8);
     
-    m_leftPIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
-    m_rightPIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity);
+    m_leftPIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
+    m_rightPIDController.setReference(-MotorContants.kIntakeSpeed, CANSparkMax.ControlType.kVelocity, 0);
   }
 
   /** move index motors to push the note out */
@@ -161,8 +185,8 @@ public class Indexing extends SubsystemBase {
     // m_left.set(.8);
     // m_right.set(.8);
     
-    m_leftPIDController.setReference(MotorContants.kShootingSpeed, CANSparkMax.ControlType.kVelocity);
-    m_rightPIDController.setReference(MotorContants.kShootingSpeed, CANSparkMax.ControlType.kVelocity);
+    m_leftPIDController.setReference(MotorContants.kShootingSpeed, CANSparkMax.ControlType.kVelocity, 0);
+    m_rightPIDController.setReference(MotorContants.kShootingSpeed, CANSparkMax.ControlType.kVelocity, 0);
   }
 
   public void stop() {
@@ -171,8 +195,8 @@ public class Indexing extends SubsystemBase {
     // m_right.set(0);
     // m_left.set(0);
 
-    m_leftPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
-    m_rightPIDController.setReference(0, CANSparkMax.ControlType.kVelocity);
+    m_leftPIDController.setReference(0, CANSparkMax.ControlType.kVelocity, 0);
+    m_rightPIDController.setReference(0, CANSparkMax.ControlType.kVelocity, 0);
   }
 
   public void setLoaded(boolean b) {
@@ -197,13 +221,15 @@ public class Indexing extends SubsystemBase {
     SmartDashboard.putNumber("Indexing Right Encoder Position", m_rightEncoder.getPosition());
     SmartDashboard.putNumber("Indexing Right Encoder Velocity", m_rightEncoder.getVelocity());
     SmartDashboard.putNumber("Indexing Right Temp", m_right.getMotorTemperature());
+
+    SmartDashboard.putNumber("Indexing Current", getCurrent());
   }
 
-  public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
-    return routine.quasistatic(direction);
-  }
+  // public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+  //   return routine.quasistatic(direction);
+  // }
 
-  public Command sysIdDynamic(SysIdRoutine.Direction direction) {
-    return routine.dynamic(direction);
-  }
+  // public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+  //   return routine.dynamic(direction);
+  // }
 }
