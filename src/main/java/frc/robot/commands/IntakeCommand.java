@@ -31,5 +31,6 @@ public class IntakeCommand extends SequentialCommandGroup {
             new InstantCommand(intake::stop), // stop everything
             new InstantCommand(indexing::stop)
         );
+        indexing.setLoaded(true);
     }
 }

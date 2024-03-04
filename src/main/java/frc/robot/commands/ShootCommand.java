@@ -27,5 +27,6 @@ public class ShootCommand extends SequentialCommandGroup {
             new InstantCommand(indexing::stop),
             new InstantCommand(shooter::stop)
         );
+        indexing.setLoaded(false);
     }
 }

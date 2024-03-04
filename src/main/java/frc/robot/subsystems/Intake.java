@@ -140,7 +140,7 @@ public class Intake extends SubsystemBase {
 
   /** stop intake motor */
   public void stop() {
-    SmartDashboard.putString("Intake State", "stop");
+    SmartDashboard.putString("Intake State", "stopped");
 
     // m_intake.set(0);
     m_intakePIDController.setReference(0, CANSparkMax.ControlType.kVelocity, 0);

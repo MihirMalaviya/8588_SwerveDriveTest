@@ -41,9 +41,8 @@ SlewRateLimiter wRateLimiter = new SlewRateLimiter(DriveConstants.kRotationalSle
         vy = yRateLimiter.calculate(vy);
         vw = wRateLimiter.calculate(vw);
 
-
-        SmartDashboard.putNumber("VX", vx);
-        SmartDashboard.putNumber("VY", vy);
+        SmartDashboard.putNumber("Vx", vx);
+        SmartDashboard.putNumber("Vy", vy);
         SmartDashboard.putNumber("Vw", vw);
 
         //ChassisSpeeds speeds = new ChassisSpeeds(vy, vx, vw);

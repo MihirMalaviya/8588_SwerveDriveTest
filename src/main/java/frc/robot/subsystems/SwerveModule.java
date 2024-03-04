@@ -12,7 +12,7 @@ import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-
+import edu.wpi.first.wpilibj.motorcontrol.Spark;
 import frc.robot.Constants;
 
 public class SwerveModule {
@@ -104,5 +104,13 @@ public class SwerveModule {
         m_turningPidController.setReference(optimizedDesiredState.angle.getRadians(), CANSparkMax.ControlType.kPosition);
 
         m_targetState = desiredState;
+    }
+
+    public SparkPIDController getTurningPidController() {
+        return m_turningPidController;
+    }
+
+    public SparkPIDController getDrivingPidController() {
+        return m_turningPidController;
     }
 }

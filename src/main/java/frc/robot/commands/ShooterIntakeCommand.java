@@ -32,5 +32,6 @@ public class ShooterIntakeCommand extends SequentialCommandGroup {
             new InstantCommand(indexing::stop), // stop everything
             new InstantCommand(shooter::stop)
         );
+        indexing.setLoaded(true);
     }
 }

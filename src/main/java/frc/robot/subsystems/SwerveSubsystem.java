@@ -14,13 +14,17 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
-import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.networktables.NetworkTableInstance;
+import edu.wpi.first.networktables.StructArrayPublisher;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
+import java.util.List;
 
 import com.kauailabs.navx.frc.AHRS;
 
-
 public class SwerveSubsystem extends SubsystemBase {
+  
+  private final StructArrayPublisher<SwerveModuleState> publisher;
 
   SwerveModule m_frontLeftModule = new SwerveModule(
     DriveConstants.kFrontLeftTurningID, DriveConstants.kFrontLeftDrivingID, 
@@ -42,6 +46,10 @@ public class SwerveSubsystem extends SubsystemBase {
       m_frontLeftModule.m_moduleLocation, m_frontRightModule.m_moduleLocation,
       m_backRightModule.m_moduleLocation, m_backLeftModule.m_moduleLocation);
 
+  SwerveModuleState[] states = m_DriveKinematics.toSwerveModuleStates(new ChassisSpeeds());
+
+  List<SwerveModule> modules = List.of(this.m_frontLeftModule, this.m_frontRightModule, this.m_backLeftModule, this.m_backRightModule);
+
   public AHRS ahrs = new AHRS();
 
   // Odometry class for tracking robot pose
@@ -55,9 +63,31 @@ public class SwerveSubsystem extends SubsystemBase {
         m_backRightModule.getPosition()
     });
 
+  private double oldTurningP  = m_frontLeftModule.getTurningPidController().getP();
+  private double oldTurningI  = m_frontLeftModule.getTurningPidController().getI();
+  private double oldTurningD  = m_frontLeftModule.getTurningPidController().getD();
+  private double oldTurningFF = m_frontLeftModule.getTurningPidController().getFF();
+
+  private double oldDrivingP  = m_frontLeftModule.getDrivingPidController().getP();
+  private double oldDrivingI  = m_frontLeftModule.getDrivingPidController().getI();
+  private double oldDrivingD  = m_frontLeftModule.getDrivingPidController().getD();
+  private double oldDrivingFF = m_frontLeftModule.getDrivingPidController().getFF();
+
   /** Creates a new SwerveSubsystem. */
   public SwerveSubsystem() {
-      
+    // Start publishing an array of module states with the "/SwerveStates" key
+    publisher = NetworkTableInstance.getDefault()
+      .getStructArrayTopic("/SwerveStates", SwerveModuleState.struct).publish();
+    
+    SmartDashboard.putNumber("Turning P",  oldTurningP);
+    SmartDashboard.putNumber("Turning I",  oldTurningI);
+    SmartDashboard.putNumber("Turning D",  oldTurningD); 
+    SmartDashboard.putNumber("Turning FF", oldTurningFF);
+    
+    SmartDashboard.putNumber("Driving P",  oldDrivingP);
+    SmartDashboard.putNumber("Driving I",  oldDrivingI);
+    SmartDashboard.putNumber("Driving D",  oldDrivingD); 
+    SmartDashboard.putNumber("Driving FF", oldDrivingFF);
   }
 
   public double getYaw() {
@@ -70,7 +100,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public void drive(ChassisSpeeds chassisSpeeds) {
 
-    SwerveModuleState[] states = m_DriveKinematics.toSwerveModuleStates(chassisSpeeds);
+    states = m_DriveKinematics.toSwerveModuleStates(chassisSpeeds);
 
     // Normalize these speeds if they become impossibly fast
     SwerveDriveKinematics.desaturateWheelSpeeds(states, DriveConstants.kMaxLinearSpeed);
@@ -109,9 +139,66 @@ public class SwerveSubsystem extends SubsystemBase {
       pose);
   }
 
+  private void updatePids() {
+    
+    double currentTurningP  = SmartDashboard.getNumber("Turning P",  oldTurningP);
+    double currentTurningI  = SmartDashboard.getNumber("Turning I",  oldTurningI);
+    double currentTurningD  = SmartDashboard.getNumber("Turning D",  oldTurningD); 
+    double currentTurningFF = SmartDashboard.getNumber("Turning FF", oldTurningFF);
+
+    double currentDrivingP  = SmartDashboard.getNumber("Driving P",  oldDrivingP);
+    double currentDrivingI  = SmartDashboard.getNumber("Driving I",  oldDrivingI);
+    double currentDrivingD  = SmartDashboard.getNumber("Driving D",  oldDrivingD); 
+    double currentDrivingFF = SmartDashboard.getNumber("Driving FF", oldDrivingFF);
+
+    if (
+      currentTurningP  != oldTurningP ||
+      currentTurningI  != oldTurningI ||
+      currentTurningD  != oldTurningD ||
+      currentTurningFF != oldTurningFF
+    ) {
+      modules.forEach(m -> {
+        m.getTurningPidController().setP( currentTurningP);
+        m.getTurningPidController().setI( currentTurningI);
+        m.getTurningPidController().setD( currentTurningD);
+        m.getTurningPidController().setFF(currentTurningFF);
+      });
+      // System.out.println("updated");
+    }
+
+    if (
+      currentDrivingP  != oldDrivingP ||
+      currentDrivingI  != oldDrivingI ||
+      currentDrivingD  != oldDrivingD ||
+      currentDrivingFF != oldDrivingFF
+    ) {
+      modules.forEach(m -> {
+        m.getDrivingPidController().setP( currentDrivingP);
+        m.getDrivingPidController().setI( currentDrivingI);
+        m.getDrivingPidController().setD( currentDrivingD);
+        m.getDrivingPidController().setFF(currentDrivingFF);
+      });
+      // System.out.println("updated");
+    }
+    
+    oldTurningP  = currentTurningP;
+    oldTurningI  = currentTurningI;
+    oldTurningD  = currentTurningD;
+    oldTurningFF = currentTurningFF;
+    
+    oldDrivingP  = currentDrivingP;
+    oldDrivingI  = currentDrivingI;
+    oldDrivingD  = currentDrivingD;
+    oldDrivingFF = currentDrivingFF;
+    
+  }
+
   @Override
   public void periodic() {
     // This method will be called once per scheduler run
+
+    // Periodically send a set of module states
+    publisher.set(states);
 
     // Update the odometry
     m_odometry.update(
@@ -122,6 +209,8 @@ public class SwerveSubsystem extends SubsystemBase {
           m_backLeftModule.getPosition(),
           m_backRightModule.getPosition()
       });
+      
+      updatePids();
 
       SmartDashboard.putNumber("Pose X", getPose().getX());
       SmartDashboard.putNumber("Pose Y", getPose().getY());
