@@ -9,6 +9,7 @@ import frc.robot.commands.DefaultDrive;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PurgeCommand;
 import frc.robot.commands.ShootCommand;
+import frc.robot.commands.StopCommand;
 import frc.robot.subsystems.Indexing;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
@@ -47,19 +48,10 @@ public class RobotContainer {
   public static final IntakeCommand intakeCommand = new IntakeCommand(m_intake, m_indexing);
   public static final ShootCommand shootCommand = new ShootCommand(m_indexing, m_shooter);
   public static final PurgeCommand purgeCommand = new PurgeCommand(m_intake, m_indexing, m_shooter);
+  public static final StopCommand stopCommand = new StopCommand(m_intake, m_indexing, m_shooter);
 
   DoubleLogEntry shotDistance; // meters
   DoubleLogEntry shotAngle; // radians
-
-  // hardcoded lookup tables
-  private LookupTable speakerLookupTable = new LookupTable(
-    new double[] {1, 2, 3, 4, 5}, // radians
-    new double[] {1, 2, 3, 4, 5}  // meters
-  );
-  private LookupTable ampLookupTable = new LookupTable(
-    new double[] {1, 2, 3, 4, 5}, // radians
-    new double[] {1, 2, 3, 4, 5}  // meters
-  );
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {

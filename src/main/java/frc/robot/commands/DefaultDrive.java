@@ -14,12 +14,12 @@ import frc.robot.subsystems.SwerveSubsystem;
 
 public class DefaultDrive extends Command {
 
-// CommandJoystick joystick;
-CommandXboxController joystick;
-SwerveSubsystem m_Swerb;
-SlewRateLimiter xRateLimiter = new SlewRateLimiter(DriveConstants.kXYSlewRate);
-SlewRateLimiter yRateLimiter = new SlewRateLimiter(DriveConstants.kXYSlewRate);
-SlewRateLimiter wRateLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
+    // CommandJoystick joystick;
+    CommandXboxController joystick;
+    SwerveSubsystem m_Swerb;
+    SlewRateLimiter xRateLimiter = new SlewRateLimiter(DriveConstants.kXYSlewRate);
+    SlewRateLimiter yRateLimiter = new SlewRateLimiter(DriveConstants.kXYSlewRate);
+    SlewRateLimiter wRateLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
 
     public DefaultDrive() {
         addRequirements(RobotContainer.m_Swerb);

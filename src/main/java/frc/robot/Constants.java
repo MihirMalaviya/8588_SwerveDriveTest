@@ -80,6 +80,27 @@ public final class Constants {
      */
     public static final double kXYSlewRate = 4.0;
     public static final double kRotationalSlewRate = 2.0;
+
+    // PID constants should be tuned per robot
+    public static final double kLinearP = 0.5;
+    public static final double kLinearI = 0;
+    public static final double kLinearD = 0.1;
+
+    public static final double kAngularP = 10.03;
+    public static final double kAngularI = 0;
+    public static final double kAngularD = 0.003;
+  }
+
+  public static final class VisionConstants {
+    public static final String CAMERA_NAME = "photonvision";
+
+    // Constants about how your camera is mounted to the robot
+    public static final double CAMERA_PITCH_RADIANS =
+            Units.degreesToRadians(15); // Angle "up" from horizontal
+    public static final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(24); // Height above floor
+
+    // How far from the target we want to be
+    public static final double GOAL_RANGE_METERS = Units.feetToMeters(10);
   }
 
   /** Constants for the Intake Subsystem */
@@ -96,8 +117,6 @@ public final class Constants {
 
     // PID tuning
     public static final double kP  = 1;
-
-
     public static final double kI  = 0;
     public static final double kD  = 0;
     public static final double kFF = 0;
