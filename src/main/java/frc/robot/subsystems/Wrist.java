@@ -33,7 +33,7 @@ import com.revrobotics.CANSparkMax;
 import com.revrobotics.CANSparkBase;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
-import com.revrobotics.CANSparkLowLevel;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 
 /** A robot wrist subsystem that moves with a motion profile. */
 public class Wrist extends TrapezoidProfileSubsystem {
@@ -63,7 +63,7 @@ public class Wrist extends TrapezoidProfileSubsystem {
   public Wrist() {
     super(new TrapezoidProfile.Constraints(WristConstants.kMaxVelocityRadPerSecond, WristConstants.kMaxAccelerationRadPerSecSquared), WristConstants.kWristOffsetRads);
     
-    m_motor = new CANSparkMax(WristConstants.kArmCanId, CANSparkLowLevel.MotorType.kBrushless);
+    m_motor = new CANSparkMax(WristConstants.kArmCanId, MotorType.kBrushless);
 
     // Factory reset, so we get the SPARK MAX to a known state before configuring them. Useful in case a SPARK MAX is swapped out.
     m_motor.restoreFactoryDefaults();

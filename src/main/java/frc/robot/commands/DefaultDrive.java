@@ -21,6 +21,11 @@ public class DefaultDrive extends Command {
     SlewRateLimiter yRateLimiter = new SlewRateLimiter(DriveConstants.kXYSlewRate);
     SlewRateLimiter wRateLimiter = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
 
+    public double applyDeadband(double value, double threshold) {
+        if (Math.abs(value) < threshold) return 0;
+        else return value;
+    }
+    
     public DefaultDrive() {
         addRequirements(RobotContainer.m_Swerb);
         this.m_Swerb = RobotContainer.m_Swerb;
@@ -32,10 +37,10 @@ public class DefaultDrive extends Command {
     @Override
     public void execute() {
         double maxSpeed = Constants.DriveConstants.kMaxLinearSpeed;
-        double vx = joystick.getRawAxis(0) * maxSpeed;
-        double vy = joystick.getRawAxis(1) * maxSpeed;
-        double vw = joystick.getRawAxis(4) * 0.1;
-        
+        double vx = applyDeadband(joystick.getLeftX(), 0.05) * maxSpeed;
+        double vy = applyDeadband(joystick.getLeftY(), 0.05) * maxSpeed;
+        double vw = applyDeadband(joystick.getRightX(), 0.05) * 0.1;
+
         // Apply slew rate limits
         vx = xRateLimiter.calculate(vx);
         vy = yRateLimiter.calculate(vy);

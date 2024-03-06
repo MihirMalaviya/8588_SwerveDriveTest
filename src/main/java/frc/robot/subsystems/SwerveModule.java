@@ -111,6 +111,6 @@ public class SwerveModule {
     }
 
     public SparkPIDController getDrivingPidController() {
-        return m_turningPidController;
+        return m_drivingPidController;
     }
 }

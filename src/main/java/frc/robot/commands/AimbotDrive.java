@@ -5,9 +5,7 @@
 package frc.robot.commands;
 
 
-import static frc.robot.Constants.VisionConstants.CAMERA_HEIGHT_METERS;
-import static frc.robot.Constants.VisionConstants.CAMERA_PITCH_RADIANS;
-import static frc.robot.Constants.VisionConstants.GOAL_RANGE_METERS;
+import static frc.robot.Constants.VisionConstants;
 
 import java.util.Optional;
 
@@ -19,9 +17,6 @@ import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
-import edu.wpi.first.math.trajectory.TrapezoidProfile;
-import edu.wpi.first.math.trajectory.ExponentialProfile.State;
-import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
@@ -30,22 +25,13 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.RobotContainer.ScoringArea;
 import frc.robot.RobotContainer;
-import frc.robot.subsystems.SwerveSubsystem;
-import frc.robot.utils.LookupTable;
 
 /** An example command that uses an example subsystem. */
 public class AimbotDrive extends Command {
   // // Change this to match the name of your camera
   // PhotonCamera camera = new PhotonCamera("photonvision");
-  
-  enum ScoringArea {
-    SPEAKER,
-    AMP//,
-    // TRAP
-  }
-
-  ScoringArea scoringArea;
 
   // PID constants should be tuned per robot
   PIDController forwardController = new PIDController(DriveConstants.kLinearP, DriveConstants.kLinearI, DriveConstants.kLinearD);
@@ -65,28 +51,17 @@ public class AimbotDrive extends Command {
   SlewRateLimiter yRateLimiterAimbot = new SlewRateLimiter(DriveConstants.kXYSlewRate);
   SlewRateLimiter wRateLimiterAimbot = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
 
-  SwerveSubsystem m_driveSubsystem;
-  PhotonCamera m_camera;
+  PhotonCamera m_camera = RobotContainer.m_camera;
   CommandXboxController m_controller = RobotContainer.driverXbox;
 
-  double range = 1.0;
+  // double shootAngle = 0.0; // radians
+  double range = 1.0; // meters
+  double goalRange = 2.0; // meters
 
-  // hardcoded lookup tables
-  private LookupTable speakerLookupTable = new LookupTable(
-    new double[] {1, 2, 3, 4, 5}, // radians
-    new double[] {1, 2, 3, 4, 5}  // meters
-  );
-  private LookupTable ampLookupTable = new LookupTable(
-    new double[] {1, 2, 3, 4, 5}, // radians
-    new double[] {1, 2, 3, 4, 5}  // meters
-  );
-
-  public AimbotDrive(SwerveSubsystem swerveSubsystem, PhotonCamera camera) {
-    m_driveSubsystem = swerveSubsystem;
-    m_camera = camera;
+  public AimbotDrive() {
 
     // Use addRequirements() here to declare subsystem dependencies.
-    addRequirements(swerveSubsystem);
+    addRequirements(RobotContainer.m_Swerb);
   }
   
   // Called every time the scheduler runs while the command is scheduled.
@@ -118,6 +93,7 @@ public class AimbotDrive extends Command {
               int targetId = target.getFiducialId();
               if (targetId >= 3 && targetId <= 5) {
                 bestTarget = target;
+                targetFound = true;
                 break;
               }
             }
@@ -155,12 +131,13 @@ public class AimbotDrive extends Command {
         case 4:
         case 7:
         case 8:
-          scoringArea = ScoringArea.SPEAKER;
+          RobotContainer.scoringArea = ScoringArea.SPEAKER;
           targetHeight = Units.inchesToMeters(57.13);
+          goalRange = 2.0;
           break;
         case 5: // amp
         case 6:
-          scoringArea = ScoringArea.AMP;
+        RobotContainer.scoringArea = ScoringArea.AMP;
           targetHeight = Units.inchesToMeters(53.38);
           break;
         // case 1: // trap
@@ -172,19 +149,22 @@ public class AimbotDrive extends Command {
         //   break;
 
         default: // this shouldnt happen...
-          targetFound = false;
           break;
       }
+      
       // First calculate range
       range = PhotonUtils.calculateDistanceToTargetMeters(
-                      CAMERA_HEIGHT_METERS,
+                      VisionConstants.CAMERA_HEIGHT_METERS,
                       targetHeight,
-                      CAMERA_PITCH_RADIANS,
+                      VisionConstants.CAMERA_PITCH_RADIANS,
                       Units.degreesToRadians(result.getBestTarget().getPitch()));
 
       // Use this range as the measurement we give to the PID controller.
       // (This forwardSpeed must be positive to go forward.)
-      forwardSpeed = -forwardController.calculate(range, GOAL_RANGE_METERS);
+      forwardSpeed = 
+          RobotContainer.scoringArea == ScoringArea.SPEAKER 
+              ? -forwardController.calculate(range, goalRange) 
+              : 0.0;
 
       // Also calculate angular power
       // (This rotationSpeed must be positive to turn counter-clockwise.)
@@ -203,8 +183,8 @@ public class AimbotDrive extends Command {
       SmartDashboard.putNumber("Vy", vy);
       SmartDashboard.putNumber("Vw", vw);
 
-      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-m_driveSubsystem.getYaw()));
-      m_driveSubsystem.drive(speeds);
+      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
+      RobotContainer.m_Swerb.drive(speeds);
         
     // } else if (m_controller.getHID().getAButton()) { // we are still intending to search
     //   // rn this just stops the robot but we might want it to look at some target position or sm
@@ -222,8 +202,8 @@ public class AimbotDrive extends Command {
     //   SmartDashboard.putNumber("Vy", vy);
     //   SmartDashboard.putNumber("Vw", vw);
 
-    //   ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-m_driveSubsystem.getYaw()));
-    //   m_driveSubsystem.drive(speeds);
+    //   ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
+    //   RobotContainer.m_Swerb.drive(speeds);
 
     } else { // no target found (just drive normally)
       double maxSpeed = Constants.DriveConstants.kMaxLinearSpeed;
@@ -240,19 +220,22 @@ public class AimbotDrive extends Command {
       SmartDashboard.putNumber("Vy", vy);
       SmartDashboard.putNumber("Vw", vw);
 
-      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-m_driveSubsystem.getYaw()));
-      m_driveSubsystem.drive(speeds);
+      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
+      RobotContainer.m_Swerb.drive(speeds);
     }
 
-    if (m_controller.getHID().getBButtonReleased()) switch (scoringArea) {
-      case SPEAKER:
-        // speakerLookupTable.getAngleFromDistance(range);
-        break;
-      case AMP:
-        // ampLookupTable.getAngleFromDistance(range);
-        break;
-    }
+    // if (m_controller.getHID().getBButtonReleased()) switch (scoringArea) {
+    //   case SPEAKER:
+    //     shootAngle = speakerLookupTable.getAngleFromDistance(range);
+    //     break;
+    //   case AMP:
+    //     shootAngle = ampLookupTable.getAngleFromDistance(range);
+    //     break;
+    // }
     
+    RobotContainer.distanceFromTarget = range;
+    // RobotContainer.shootAngle = shootAngle;
+
   }
 
   // Returns true when the command should end.

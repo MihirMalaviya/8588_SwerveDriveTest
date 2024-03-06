@@ -4,15 +4,19 @@ import edu.wpi.first.wpilibj2.command.InstantCommand;
 import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.WaitCommand;
 import edu.wpi.first.wpilibj2.command.WaitUntilCommand;
+import frc.robot.RobotContainer;
 import frc.robot.subsystems.Indexing;
 import frc.robot.subsystems.Intake;
+import frc.robot.subsystems.Shooter;
 
 public class IntakeCommand extends SequentialCommandGroup {
 
-    public IntakeCommand(
-        Intake intake, Indexing indexing
-    ) {
-        addRequirements(intake, indexing);
+    public IntakeCommand() {
+        Intake intake = RobotContainer.m_intake;
+        Indexing indexing = RobotContainer.m_indexing;
+        Shooter shooter = RobotContainer.m_shooter;
+
+        addRequirements(intake, indexing, shooter);
 
         final double intakeCurrentThreshold   = 20.0; // amps (i think)
         final double indexingCurrentThreshold = 20.0; // amps (i think)
@@ -21,6 +25,10 @@ public class IntakeCommand extends SequentialCommandGroup {
         final double velocityThreshold        = 0.05; // meters / second
 
         addCommands(
+            new InstantCommand(intake::stop),
+            new InstantCommand(indexing::stop),
+            new InstantCommand(shooter::stop),
+
             new InstantCommand(intake::intake),
             new WaitUntilCommand(() -> intake.getCurrent() > intakeCurrentThreshold), // intake until it hits intake and intake gets a current spike
             new InstantCommand(() -> intake.intakeDistance(intakeDistance)), // take it in for a certain distance

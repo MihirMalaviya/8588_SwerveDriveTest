@@ -11,6 +11,7 @@ import static edu.wpi.first.units.Units.Volts;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkLowLevel;
 
 // import edu.wpi.first.math.controller.BangBangController;
@@ -43,8 +44,8 @@ public class Shooter extends SubsystemBase {
   // SysIdRoutine routine;
 
   public Shooter() {
-    m_bottom = new CANSparkMax(ShooterConstants.kBottomCanId, CANSparkLowLevel.MotorType.kBrushless);
-    m_top = new CANSparkMax(ShooterConstants.kTopCanId, CANSparkLowLevel.MotorType.kBrushless);
+    m_bottom = new CANSparkMax(ShooterConstants.kBottomCanId, MotorType.kBrushless);
+    m_top = new CANSparkMax(ShooterConstants.kTopCanId, MotorType.kBrushless);
 
     // Factory reset, so we get the SPARKS MAX to a known state before configuring
     // them. Useful in case a SPARK MAX is swapped out.

@@ -24,6 +24,7 @@ import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import com.revrobotics.CANSparkMax;
 import com.revrobotics.RelativeEncoder;
 import com.revrobotics.SparkPIDController;
+import com.revrobotics.CANSparkLowLevel.MotorType;
 import com.revrobotics.CANSparkLowLevel;
 
 // CONSTANTS
@@ -43,7 +44,7 @@ public class Intake extends SubsystemBase {
   // SysIdRoutine routine;
 
   public Intake() {
-    this.m_intake = new CANSparkMax(IntakeConstants.kIntakeCanId, CANSparkLowLevel.MotorType.kBrushless);
+    this.m_intake = new CANSparkMax(IntakeConstants.kIntakeCanId, MotorType.kBrushless);
 
     // Factory reset, so we get the SPARK MAX to a known state before configuring them. Useful in case a SPARK MAX is swapped out.
     m_intake.restoreFactoryDefaults();

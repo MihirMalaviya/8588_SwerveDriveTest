@@ -5,8 +5,12 @@
 package frc.robot.subsystems;
 
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-
+import frc.robot.RobotContainer;
 import frc.robot.Constants.DriveConstants;
+import frc.robot.Constants.VisionConstants;
+import edu.wpi.first.apriltag.AprilTagFields;
+import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
@@ -14,11 +18,18 @@ import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 import java.util.List;
+import java.util.Optional;
+
+import org.photonvision.EstimatedRobotPose;
+import org.photonvision.PhotonPoseEstimator;
+import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 
 import com.kauailabs.navx.frc.AHRS;
 
@@ -52,16 +63,22 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public AHRS ahrs = new AHRS();
 
-  // Odometry class for tracking robot pose
-  SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
-    m_DriveKinematics,
-    Rotation2d.fromDegrees(ahrs.getAngle()),
-    new SwerveModulePosition[] {
-        m_frontLeftModule.getPosition(),
-        m_frontRightModule.getPosition(),
-        m_backLeftModule.getPosition(),
-        m_backRightModule.getPosition()
-    });
+  // // Odometry class for tracking robot pose
+  // SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
+  //   m_DriveKinematics,
+  //   Rotation2d.fromDegrees(ahrs.getAngle()),
+  //   new SwerveModulePosition[] {
+  //       m_frontLeftModule.getPosition(),
+  //       m_frontRightModule.getPosition(),
+  //       m_backLeftModule.getPosition(),
+  //       m_backRightModule.getPosition()
+  //   });
+
+  PhotonPoseEstimator photonPoseEstimator = new PhotonPoseEstimator(AprilTagFields.k2024Crescendo.loadAprilTagLayoutField(), PoseStrategy.CLOSEST_TO_REFERENCE_POSE, RobotContainer.m_camera, VisionConstants.ROBOT_TO_CAM);
+
+  /* Here we use SwerveDrivePoseEstimator so that we can fuse odometry readings. The numbers used
+  below are robot specific, and should be tuned. */
+  private final SwerveDrivePoseEstimator m_poseEstimator;
 
   private double oldTurningP  = m_frontLeftModule.getTurningPidController().getP();
   private double oldTurningI  = m_frontLeftModule.getTurningPidController().getI();
@@ -75,6 +92,25 @@ public class SwerveSubsystem extends SubsystemBase {
 
   /** Creates a new SwerveSubsystem. */
   public SwerveSubsystem() {
+
+    m_poseEstimator =
+        new SwerveDrivePoseEstimator(
+            m_DriveKinematics,
+            ahrs.getRotation2d(),
+            new SwerveModulePosition[] {
+              m_frontLeftModule.getPosition(),
+              m_frontRightModule.getPosition(),
+              m_backLeftModule.getPosition(),
+              m_backRightModule.getPosition()
+            },
+            new Pose2d(),
+            // these are std devs, they may need to be tuned accordingly for our bot
+            VecBuilder.fill(0.05, 0.05, Units.degreesToRadians(5)),
+            VecBuilder.fill(0.5, 0.5, Units.degreesToRadians(30)));
+            
+    // // need to change this to where the robot is on the atual field somehow
+    // photonPoseEstimator.setLastPose(getPose());
+
     // Start publishing an array of module states with the "/SwerveStates" key
     publisher = NetworkTableInstance.getDefault()
       .getStructArrayTopic("/SwerveStates", SwerveModuleState.struct).publish();
@@ -119,7 +155,12 @@ public class SwerveSubsystem extends SubsystemBase {
    * @return The pose.
    */
   public Pose2d getPose() {
-    return m_odometry.getPoseMeters();
+    return m_poseEstimator.getEstimatedPosition();
+  }
+
+  public Optional<EstimatedRobotPose> getEstimatedGlobalPose(Pose2d prevEstimatedRobotPose) {
+    photonPoseEstimator.setReferencePose(prevEstimatedRobotPose);
+    return photonPoseEstimator.update();
   }
 
   /**
@@ -128,8 +169,8 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param pose The pose to which to set the odometry.
    */
   public void resetOdometry(Pose2d pose) {
-    m_odometry.resetPosition(
-      Rotation2d.fromDegrees(ahrs.getAngle()),
+    m_poseEstimator.resetPosition(
+      ahrs.getRotation2d(),
       new SwerveModulePosition[] {
           m_frontLeftModule.getPosition(),
           m_frontRightModule.getPosition(),
@@ -140,7 +181,6 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   private void updatePids() {
-    
     double currentTurningP  = SmartDashboard.getNumber("Turning P",  oldTurningP);
     double currentTurningI  = SmartDashboard.getNumber("Turning I",  oldTurningI);
     double currentTurningD  = SmartDashboard.getNumber("Turning D",  oldTurningD); 
@@ -153,13 +193,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     if (
       currentTurningP  != oldTurningP ||
-      currentTurningI  != oldTurningI ||
+      // currentTurningI  != oldTurningI ||
       currentTurningD  != oldTurningD ||
       currentTurningFF != oldTurningFF
     ) {
       modules.forEach(m -> {
         m.getTurningPidController().setP( currentTurningP);
-        m.getTurningPidController().setI( currentTurningI);
+        // m.getTurningPidController().setI( currentTurningI);
         m.getTurningPidController().setD( currentTurningD);
         m.getTurningPidController().setFF(currentTurningFF);
       });
@@ -168,13 +208,13 @@ public class SwerveSubsystem extends SubsystemBase {
 
     if (
       currentDrivingP  != oldDrivingP ||
-      currentDrivingI  != oldDrivingI ||
+      // currentDrivingI  != oldDrivingI ||
       currentDrivingD  != oldDrivingD ||
       currentDrivingFF != oldDrivingFF
     ) {
       modules.forEach(m -> {
         m.getDrivingPidController().setP( currentDrivingP);
-        m.getDrivingPidController().setI( currentDrivingI);
+        // m.getDrivingPidController().setI( currentDrivingI);
         m.getDrivingPidController().setD( currentDrivingD);
         m.getDrivingPidController().setFF(currentDrivingFF);
       });
@@ -182,15 +222,40 @@ public class SwerveSubsystem extends SubsystemBase {
     }
     
     oldTurningP  = currentTurningP;
-    oldTurningI  = currentTurningI;
+    // oldTurningI  = currentTurningI;
     oldTurningD  = currentTurningD;
     oldTurningFF = currentTurningFF;
     
     oldDrivingP  = currentDrivingP;
-    oldDrivingI  = currentDrivingI;
+    // oldDrivingI  = currentDrivingI;
     oldDrivingD  = currentDrivingD;
     oldDrivingFF = currentDrivingFF;
-    
+  }
+  
+  /** Updates the field relative position of the robot. */
+  public void updateOdometry() {
+    m_poseEstimator.update(
+        ahrs.getRotation2d(), // might need to be changed
+        new SwerveModulePosition[] {
+          m_frontLeftModule.getPosition(),
+          m_frontRightModule.getPosition(),
+          m_backLeftModule.getPosition(),
+          m_backRightModule.getPosition()
+        });
+
+    // apply vision measurements
+    // this must be calculated based either on latency or timestamps.
+    Optional<EstimatedRobotPose> estimatedGlobalPose = getEstimatedGlobalPose(m_poseEstimator.getEstimatedPosition());
+
+    if (estimatedGlobalPose.isPresent()) {
+      m_poseEstimator.addVisionMeasurement(
+          getEstimatedGlobalPose(m_poseEstimator.getEstimatedPosition()).get().estimatedPose.toPose2d(),
+          Timer.getFPGATimestamp() - 0.3);
+      
+      SmartDashboard.putBoolean("Vision Pose Estimate", true);
+    } else {
+      SmartDashboard.putBoolean("Vision Pose Estimate", false);
+    }
   }
 
   @Override
@@ -199,22 +264,15 @@ public class SwerveSubsystem extends SubsystemBase {
 
     // Periodically send a set of module states
     publisher.set(states);
-
-    // Update the odometry
-    m_odometry.update(
-      Rotation2d.fromDegrees(ahrs.getAngle()),
-      new SwerveModulePosition[] {
-          m_frontLeftModule.getPosition(),
-          m_frontRightModule.getPosition(),
-          m_backLeftModule.getPosition(),
-          m_backRightModule.getPosition()
-      });
       
-      updatePids();
+    updateOdometry();
 
-      SmartDashboard.putNumber("Pose X", getPose().getX());
-      SmartDashboard.putNumber("Pose Y", getPose().getY());
-      SmartDashboard.putNumber("Pose Rotation", getPose().getRotation().getDegrees());
+    updatePids();
+
+    Pose2d pose = getPose();
+    SmartDashboard.putNumber("Pose X", pose.getX());
+    SmartDashboard.putNumber("Pose Y", pose.getY());
+    SmartDashboard.putNumber("Pose Rotation", pose.getRotation().getDegrees());
   }
 
   @Override

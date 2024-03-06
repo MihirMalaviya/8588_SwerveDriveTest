@@ -4,8 +4,10 @@
 
 package frc.robot;
 
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
-
+import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 
@@ -95,12 +97,11 @@ public final class Constants {
     public static final String CAMERA_NAME = "photonvision";
 
     // Constants about how your camera is mounted to the robot
-    public static final double CAMERA_PITCH_RADIANS =
-            Units.degreesToRadians(15); // Angle "up" from horizontal
+    public static final double CAMERA_PITCH_RADIANS = Units.degreesToRadians(15); // Angle "up" from horizontal
     public static final double CAMERA_HEIGHT_METERS = Units.inchesToMeters(24); // Height above floor
-
-    // How far from the target we want to be
-    public static final double GOAL_RANGE_METERS = Units.feetToMeters(10);
+  
+    // we need to put the right values once we mount camera
+    public static final Transform3d ROBOT_TO_CAM = new Transform3d(new Translation3d(0.5, 0.0, 0.5), new Rotation3d(0.0, 0.0, 0.0)); 
   }
 
   /** Constants for the Intake Subsystem */

@@ -4,7 +4,19 @@
 
 package frc.robot;
 
+import org.photonvision.PhotonCamera;
+
+import edu.wpi.first.util.datalog.DataLog;
+import edu.wpi.first.util.datalog.DoubleLogEntry;
+import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+// import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
+import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
+import frc.robot.Constants.VisionConstants;
+import frc.robot.commands.AimbotDrive;
 import frc.robot.commands.DefaultDrive;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PurgeCommand;
@@ -16,15 +28,6 @@ import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.Wrist;
 import frc.robot.utils.LookupTable;
-import edu.wpi.first.util.datalog.DataLog;
-import edu.wpi.first.util.datalog.DoubleLogEntry;
-import edu.wpi.first.wpilibj.DataLogManager;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.InstantCommand;
-// import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
-import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
-import edu.wpi.first.wpilibj2.command.button.Trigger;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -33,8 +36,27 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class RobotContainer {
+  public static enum ScoringArea {
+    SPEAKER,
+    AMP//,
+    // TRAP
+  }
+
+  public static ScoringArea scoringArea = ScoringArea.AMP;
+  
+  // hardcoded lookup tables
+  public static final LookupTable speakerLookupTable = new LookupTable(
+    new double[] {1, 2, 3, 4, 5}, // radians
+    new double[] {1, 2, 3, 4, 5}  // meters
+  );
+  public static final LookupTable ampLookupTable = new LookupTable(
+    new double[] {1, 2, 3, 4, 5}, // radians
+    new double[] {1, 2, 3, 4, 5}  // meters
+  );
+
   // The robot's subsystems and commands are defined here...
   public static final SwerveSubsystem m_Swerb = new SwerveSubsystem();
+  public static final PhotonCamera m_camera = new PhotonCamera(VisionConstants.CAMERA_NAME);
 
   public static final Intake m_intake = new Intake();
   public static final Indexing m_indexing = new Indexing();
@@ -45,13 +67,17 @@ public class RobotContainer {
   // public static CommandJoystick commandJoystick = new CommandJoystick(OperatorConstants.kDriverControllerPort);
   public static CommandXboxController driverXbox = new CommandXboxController(OperatorConstants.kDriverControllerPort);
 
-  public static final IntakeCommand intakeCommand = new IntakeCommand(m_intake, m_indexing);
-  public static final ShootCommand shootCommand = new ShootCommand(m_indexing, m_shooter);
-  public static final PurgeCommand purgeCommand = new PurgeCommand(m_intake, m_indexing, m_shooter);
-  public static final StopCommand stopCommand = new StopCommand(m_intake, m_indexing, m_shooter);
+  public static final IntakeCommand intakeCommand = new IntakeCommand();
+  public static final ShootCommand shootCommand = new ShootCommand();
+  public static final PurgeCommand purgeCommand = new PurgeCommand();
+  public static final StopCommand stopCommand = new StopCommand();
+  public static final AimbotDrive aimbotDrive = new AimbotDrive();
+  
+  public static DoubleLogEntry shotDistance; // meters
+  public static DoubleLogEntry shotAngle; // radians
 
-  DoubleLogEntry shotDistance; // meters
-  DoubleLogEntry shotAngle; // radians
+  public static double distanceFromTarget = 1.0; // meters
+  public static double shootAngle = 0.0; // radians
 
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
@@ -77,8 +103,10 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    m_Swerb.setDefaultCommand(new DefaultDrive());
-    // commandJoystick.button(4)
+    // m_Swerb.setDefaultCommand(new Defa./,ultDrive());
+
+    m_Swerb.setDefaultCommand(aimbotDrive);
+
     driverXbox.y()
       .onTrue(new InstantCommand(() -> m_Swerb.zeroYaw()));
 
