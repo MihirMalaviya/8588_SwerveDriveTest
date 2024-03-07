@@ -8,7 +8,6 @@ import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.geometry.Translation3d;
-import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.util.Units;
 
 /**
@@ -36,7 +35,8 @@ public final class Constants {
 
     public static final int kBackLeftTurningID = 12;
     public static final int kBackLeftDrivingID = 13;
-     
+
+    // MODULE PIDs
     public static final double kTurningP = 1;
     public static final double kTurningI = 0;
     public static final double kTurningD = 0;
@@ -46,6 +46,15 @@ public final class Constants {
     public static final double kDrivingI = 0;
     public static final double kDrivingD = 0;
     public static final double kDrivingFF = 1 / ((5676 / 60) * (0.0762 * Math.PI) / 4.71);
+
+    // BOT PIDs
+    public static final double kRotationP = 5.0;
+    public static final double kRotationI = 0.0;
+    public static final double kRotationD = 0.5;
+
+    public static final double kDriveP = 10.0;
+    public static final double kDriveI = 0.0;
+    public static final double kDriveD = 0.25;
 
     public static final double kDriveReduction = 4.71;
     public static final double kAngleReduction = 46.42;
@@ -110,17 +119,20 @@ public final class Constants {
     public static final int kIntakeCanId = 20;
 
     // MEASUREMENTS !!!!!!!!! NOT FINAL
-    public static final double kWheelDiameter = 4.0 / 12.0; // meters
+    public static final double kWheelDiameter = Units.inchesToMeters(4.0); // meters
 
     // UNIT CONVERSION
     public static final double kEncoderPositionFactor = kWheelDiameter * Math.PI; // meters
     public static final double kEncoderVelocityFactor = (kWheelDiameter * Math.PI) / 60.0; // meters per second
 
     // PID tuning
-    public static final double kP  = 1;
-    public static final double kI  = 0;
-    public static final double kD  = 0;
-    public static final double kFF = 0;
+    public static final double kP  = 0.01;
+    public static final double kI  = 0.0;
+    public static final double kD  = 0.019;
+    public static final double kFF = 0.0;
+
+    public static final double kMaxVel = 1000.0 * kEncoderPositionFactor;
+    public static final double kMaxAcc = 1000.0;
   }
 
   /** Constants for the Indexing Subsystem */
@@ -130,7 +142,7 @@ public final class Constants {
     public static final int kRightCanId = 22;
 
     // MEASUREMENTS
-    public static final double kWheelDiameter = 3.0 / 12.0; // meters
+    public static final double kWheelDiameter = Units.inchesToMeters(3.0); // meters
     public static final double kGearRatio = 1.0 / 16.0; // 16:1 gear ratio
 
     // UNIT CONVERSION
@@ -153,8 +165,8 @@ public final class Constants {
     public static final int kTopCanId = 25;
 
     // MEASUREMENTS
-    public static final double kBottomWheelDiameter = 3.0 / 12.0; // meters
-    public static final double kTopWheelDiameter    = 4.0 / 12.0; // meters
+    public static final double kBottomWheelDiameter = Units.inchesToMeters(3.0); // meters
+    public static final double kTopWheelDiameter    = Units.inchesToMeters(4.0); // meters
 
     // UNIT CONVERSION
     public static final double kBottomEncoderPositionFactor = kBottomWheelDiameter * Math.PI; // meters
@@ -209,10 +221,10 @@ public final class Constants {
 
   public static final class MotorContants {
     public static final double kArmSpeed      = 0.5; // meters per second
-    public static final double kIntakeSpeed   = 1.0; // meters per second
+    public static final double kIntakeSpeed   = 100.0; // meters per second
     public static final double kShootingSpeed = 10.0; // meters per second
     
-    public static final double kIntakeDistance   = 1.0; // meters
+    public static final double kIntakeDistance   = 10.0; // meters
     public static final double kIndexingDistance = 0.5; // meters
 
     public static final int kMotorCurrentLimit = 50; // amps

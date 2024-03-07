@@ -4,23 +4,31 @@
 
 package frc.robot.subsystems;
 
+import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import frc.robot.Constants;
+import frc.robot.Robot;
 import frc.robot.RobotContainer;
 import frc.robot.Constants.DriveConstants;
 import frc.robot.Constants.VisionConstants;
+import edu.wpi.first.apriltag.AprilTagFieldLayout;
 import edu.wpi.first.apriltag.AprilTagFields;
 import edu.wpi.first.math.VecBuilder;
+import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.estimator.SwerveDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.kinematics.SwerveDriveKinematics;
 import edu.wpi.first.math.kinematics.SwerveDriveOdometry;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.math.kinematics.SwerveModuleState;
+import edu.wpi.first.math.trajectory.Trajectory;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.networktables.StructArrayPublisher;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
@@ -28,12 +36,25 @@ import java.util.List;
 import java.util.Optional;
 
 import org.photonvision.EstimatedRobotPose;
+import org.photonvision.PhotonCamera;
 import org.photonvision.PhotonPoseEstimator;
 import org.photonvision.PhotonPoseEstimator.PoseStrategy;
 
 import com.kauailabs.navx.frc.AHRS;
+import com.pathplanner.lib.commands.FollowPathHolonomic;
+import com.pathplanner.lib.path.PathPlannerPath;
+import com.pathplanner.lib.path.PathPlannerTrajectory;
+import com.pathplanner.lib.path.PathPlannerTrajectory.State;
+import com.pathplanner.lib.util.HolonomicPathFollowerConfig;
+import com.pathplanner.lib.util.PIDConstants;
+import com.pathplanner.lib.util.ReplanningConfig;
 
 public class SwerveSubsystem extends SubsystemBase {
+  
+  public static Translation2d blueSpeakerPos = new Translation2d(0.076, 5.55);
+  public static Translation2d redSpeakerPos = new Translation2d(16.47, 5.55);
+  public static Pose2d blueAmp = new Pose2d(1.82, 7.7, new Rotation2d());
+  public static Pose2d redAmp = new Pose2d(14.73, 7.7, new Rotation2d());
   
   private final StructArrayPublisher<SwerveModuleState> publisher;
 
@@ -60,13 +81,35 @@ public class SwerveSubsystem extends SubsystemBase {
   SwerveModuleState[] states = m_DriveKinematics.toSwerveModuleStates(new ChassisSpeeds());
 
   List<SwerveModule> modules = List.of(this.m_frontLeftModule, this.m_frontRightModule, this.m_backLeftModule, this.m_backRightModule);
+  
+  // path planner init
+  public PathPlannerPath path;
+  public PathPlannerTrajectory autoTraj;
+  public Translation2d ajustedV = new Translation2d();
+  public double rotCorrection = 0;
+  
+  // path PID loops
+  public PIDController m_xPosPidController = new PIDController(DriveConstants.kDriveP, DriveConstants.kDriveI, DriveConstants.kDriveD);
+  public PIDController m_yPosPidController = new PIDController(DriveConstants.kDriveP, DriveConstants.kDriveI, DriveConstants.kDriveD);
+  public PIDController m_rotPidController = new PIDController(DriveConstants.kRotationP, DriveConstants.kRotationI, DriveConstants.kRotationD);
+  
+  // path planning vars
+  public double trajStartTime;
+  public State goalState = new State();
+  public double trajElapsedTime;
+  public Trajectory.State trajState;
+  public Rotation2d goalHeading = new Rotation2d();
+  public ChassisSpeeds adjustedSpeeds;
+  public PhotonCamera camera = RobotContainer.m_camera;
+  AprilTagFieldLayout aprilTagFieldLayout = AprilTagFields.k2024Crescendo.loadAprilTagLayoutField();
+  public double lastPhotonUpdateTime = 0;
 
-  public AHRS ahrs = new AHRS();
+  public AHRS gyro = new AHRS();
 
   // // Odometry class for tracking robot pose
   // SwerveDriveOdometry m_odometry = new SwerveDriveOdometry(
   //   m_DriveKinematics,
-  //   Rotation2d.fromDegrees(ahrs.getAngle()),
+  //   Rotation2d.fromDegrees(gyro.getAngle()),
   //   new SwerveModulePosition[] {
   //       m_frontLeftModule.getPosition(),
   //       m_frontRightModule.getPosition(),
@@ -74,7 +117,7 @@ public class SwerveSubsystem extends SubsystemBase {
   //       m_backRightModule.getPosition()
   //   });
 
-  PhotonPoseEstimator photonPoseEstimator = new PhotonPoseEstimator(AprilTagFields.k2024Crescendo.loadAprilTagLayoutField(), PoseStrategy.CLOSEST_TO_REFERENCE_POSE, RobotContainer.m_camera, VisionConstants.ROBOT_TO_CAM);
+  PhotonPoseEstimator photonPoseEstimator = new PhotonPoseEstimator(aprilTagFieldLayout, PoseStrategy.CLOSEST_TO_REFERENCE_POSE, RobotContainer.m_camera, VisionConstants.ROBOT_TO_CAM);
 
   /* Here we use SwerveDrivePoseEstimator so that we can fuse odometry readings. The numbers used
   below are robot specific, and should be tuned. */
@@ -84,7 +127,7 @@ public class SwerveSubsystem extends SubsystemBase {
   private double oldTurningI  = m_frontLeftModule.getTurningPidController().getI();
   private double oldTurningD  = m_frontLeftModule.getTurningPidController().getD();
   private double oldTurningFF = m_frontLeftModule.getTurningPidController().getFF();
-
+  
   private double oldDrivingP  = m_frontLeftModule.getDrivingPidController().getP();
   private double oldDrivingI  = m_frontLeftModule.getDrivingPidController().getI();
   private double oldDrivingD  = m_frontLeftModule.getDrivingPidController().getD();
@@ -96,7 +139,7 @@ public class SwerveSubsystem extends SubsystemBase {
     m_poseEstimator =
         new SwerveDrivePoseEstimator(
             m_DriveKinematics,
-            ahrs.getRotation2d(),
+            gyro.getRotation2d(),
             new SwerveModulePosition[] {
               m_frontLeftModule.getPosition(),
               m_frontRightModule.getPosition(),
@@ -115,6 +158,21 @@ public class SwerveSubsystem extends SubsystemBase {
     publisher = NetworkTableInstance.getDefault()
       .getStructArrayTopic("/SwerveStates", SwerveModuleState.struct).publish();
     
+    // pathFollowingInit
+    goalState = new State();
+
+    // ---
+    
+    oldTurningP  = m_frontLeftModule.getTurningPidController().getP();
+    oldTurningI  = m_frontLeftModule.getTurningPidController().getI();
+    oldTurningD  = m_frontLeftModule.getTurningPidController().getD();
+    oldTurningFF = m_frontLeftModule.getTurningPidController().getFF();
+    
+    oldDrivingP  = m_frontLeftModule.getDrivingPidController().getP();
+    oldDrivingI  = m_frontLeftModule.getDrivingPidController().getI();
+    oldDrivingD  = m_frontLeftModule.getDrivingPidController().getD();
+    oldDrivingFF = m_frontLeftModule.getDrivingPidController().getFF();
+
     SmartDashboard.putNumber("Turning P",  oldTurningP);
     SmartDashboard.putNumber("Turning I",  oldTurningI);
     SmartDashboard.putNumber("Turning D",  oldTurningD); 
@@ -127,11 +185,11 @@ public class SwerveSubsystem extends SubsystemBase {
   }
 
   public double getYaw() {
-    return ahrs.getYaw();
+    return gyro.getYaw();
   }
 
   public void zeroYaw() {
-    ahrs.zeroYaw();
+    gyro.zeroYaw();
   }
 
   public void drive(ChassisSpeeds chassisSpeeds) {
@@ -149,6 +207,95 @@ public class SwerveSubsystem extends SubsystemBase {
     // ChassisSpeeds adjSpeeds = new ChassisSpeeds()
   }
 
+  // load a path from file
+  public void initPath(String pathName, boolean flipToRed) {
+
+    path = PathPlannerPath.fromPathFile(pathName);
+
+    if (flipToRed) {
+      path = path.flipPath();
+    }
+
+    // geneate trajectory from path
+    autoTraj = path.getTrajectory(new ChassisSpeeds(), path.getPreviewStartingHolonomicPose().getRotation());
+
+    m_xPosPidController.reset();
+    m_yPosPidController.reset();
+    m_rotPidController.reset();
+
+    goalState = autoTraj.sample(0);
+    goalHeading = goalState.targetHolonomicRotation;
+
+    // if (Robot.isSimulation() 
+    // // || thisRobot.autoController.autoRoutine == autoRoutines._XTESTINGACCURACY
+    // ) {
+    resetOdometry(goalState.getTargetHolonomicPose());
+    // }
+
+    trajStartTime = Timer.getFPGATimestamp();
+  }
+
+  // apply control to follow each step of path
+  public void followPath() {
+    // get current sample
+    trajElapsedTime = Timer.getFPGATimestamp() - trajStartTime;
+    goalState = autoTraj.sample(trajElapsedTime);
+    goalHeading = goalState.targetHolonomicRotation;
+
+    // update xy PID controllers
+    double xCorrection = m_xPosPidController.calculate(getPose().getX(), goalState.getTargetHolonomicPose().getX());
+    double yCorrection = m_yPosPidController.calculate(getPose().getY(), goalState.getTargetHolonomicPose().getY());
+
+    goalHeading = new Rotation2d(Math.toRadians(goalHeading.getDegrees()));
+
+    // add the path velocity with the PID velocity
+    Translation2d trajV = new Translation2d(goalState.velocityMps, goalHeading);
+    ajustedV = new Translation2d(xCorrection, yCorrection);
+    ajustedV = ajustedV.plus(trajV);
+
+    double rot = m_rotPidController.calculate(m_poseEstimator.getEstimatedPosition().getRotation().getRadians(),
+        goalHeading.getRadians());
+
+    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
+      ajustedV.getX(), ajustedV.getY(), rot, m_poseEstimator.getEstimatedPosition().getRotation()));
+  }
+
+  public Command followPathCommand(String pathName) {
+    PathPlannerPath path = PathPlannerPath.fromPathFile(pathName);
+
+    return new FollowPathHolonomic(
+            path,
+            this::getPose, // Robot pose supplier
+            this::getSpeeds, // ChassisSpeeds supplier. MUST BE ROBOT RELATIVE
+            this::drive, // Method that will drive the robot given ROBOT RELATIVE ChassisSpeeds
+            new HolonomicPathFollowerConfig( // HolonomicPathFollowerConfig, this should likely live in your Constants class
+                    new PIDConstants(DriveConstants.kDriveP, 0.0, DriveConstants.kDriveD), // Translation PID constants
+                    new PIDConstants(DriveConstants.kRotationP, 0.0, DriveConstants.kRotationD), // Rotation PID constants
+                    4.5, // Max module speed, in m/s
+                    0.45, // Drive base radius in meters. Distance from robot center to furthest module.
+                    new ReplanningConfig() // Default path replanning config. See the API for the options here
+            ),
+            () -> {
+                var alliance = DriverStation.getAlliance();
+                if (alliance.isPresent()) {
+                    return alliance.get() == DriverStation.Alliance.Red;
+                }
+                return false;
+            },
+            this // Reference to this subsystem to set requirements
+    );
+  }
+  
+  public boolean isPathOver() {
+    double trajElapsedTime = Timer.getFPGATimestamp() - trajStartTime;
+    return trajElapsedTime > autoTraj.getTotalTimeSeconds();
+  }
+
+  public void setOdomToPathInit() {
+    Pose2d initPose = goalState.getTargetHolonomicPose();
+    resetOdometry(initPose);
+  }
+
   /**
    * Returns the currently-estimated pose of the robot.
    *
@@ -162,6 +309,10 @@ public class SwerveSubsystem extends SubsystemBase {
     photonPoseEstimator.setReferencePose(prevEstimatedRobotPose);
     return photonPoseEstimator.update();
   }
+  
+  public ChassisSpeeds getSpeeds() {
+    return m_DriveKinematics.toChassisSpeeds(states);
+  }
 
   /**
    * Resets the odometry to the specified pose.
@@ -170,7 +321,7 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public void resetOdometry(Pose2d pose) {
     m_poseEstimator.resetPosition(
-      ahrs.getRotation2d(),
+      gyro.getRotation2d(),
       new SwerveModulePosition[] {
           m_frontLeftModule.getPosition(),
           m_frontRightModule.getPosition(),
@@ -179,7 +330,7 @@ public class SwerveSubsystem extends SubsystemBase {
       },
       pose);
   }
-
+  
   private void updatePids() {
     double currentTurningP  = SmartDashboard.getNumber("Turning P",  oldTurningP);
     double currentTurningI  = SmartDashboard.getNumber("Turning I",  oldTurningI);
@@ -235,7 +386,7 @@ public class SwerveSubsystem extends SubsystemBase {
   /** Updates the field relative position of the robot. */
   public void updateOdometry() {
     m_poseEstimator.update(
-        ahrs.getRotation2d(), // might need to be changed
+        gyro.getRotation2d(), // might need to be changed
         new SwerveModulePosition[] {
           m_frontLeftModule.getPosition(),
           m_frontRightModule.getPosition(),
@@ -250,12 +401,53 @@ public class SwerveSubsystem extends SubsystemBase {
     if (estimatedGlobalPose.isPresent()) {
       m_poseEstimator.addVisionMeasurement(
           getEstimatedGlobalPose(m_poseEstimator.getEstimatedPosition()).get().estimatedPose.toPose2d(),
-          Timer.getFPGATimestamp() - 0.3);
+          estimatedGlobalPose.get().timestampSeconds);
+          // Timer.getFPGATimestamp() - 0.3);
       
       SmartDashboard.putBoolean("Vision Pose Estimate", true);
     } else {
       SmartDashboard.putBoolean("Vision Pose Estimate", false);
     }
+  }
+
+  //set goal heading to aim at a point on the field, we are always looking away from the goal
+  public void aimAtPoint(Translation2d point) {
+    Translation2d currentPos = getPose().getTranslation();
+    Translation2d goalPos = currentPos.minus(point);
+    goalHeading = goalPos.getAngle();
+  }
+  
+  public void goTowardPoint(Pose2d point) {
+    double xP = m_xPosPidController.calculate(getPose().getX(), point.getX());
+    double yP = m_yPosPidController.calculate(getPose().getY(), point.getY());
+
+    driveClosedLoopHeading(new Translation2d(xP, yP));
+  }
+  
+  //used in tele to just update goal heading to face the goals
+  public void setGoalHeadingToGoal() {
+    if (RobotContainer.isRedAlliance) {
+      aimAtPoint(redSpeakerPos);
+    } else {
+      aimAtPoint(blueSpeakerPos);
+    }
+  }
+
+  // drive with closed loop heading control while updateing goal heading
+  public void driveClosedLoopHeading(Translation2d translation) {
+
+    double rot = m_rotPidController.calculate(m_poseEstimator.getEstimatedPosition().getRotation().getRadians(),
+        goalHeading.getRadians());
+
+        
+    drive(ChassisSpeeds.fromFieldRelativeSpeeds(
+      translation.getX(), translation.getY(), rot, m_poseEstimator.getEstimatedPosition().getRotation()));
+  }
+
+  //used in auto when not moving to point the robot at the goal
+  public void aimAtGoal() {
+    setGoalHeadingToGoal();
+    driveClosedLoopHeading(new Translation2d());
   }
 
   @Override

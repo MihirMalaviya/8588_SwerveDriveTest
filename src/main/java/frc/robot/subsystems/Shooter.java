@@ -69,27 +69,27 @@ public class Shooter extends SubsystemBase {
     m_topEncoder.setPositionConversionFactor(ShooterConstants.kTopEncoderPositionFactor);
     m_topEncoder.setVelocityConversionFactor(ShooterConstants.kTopEncoderVelocityFactor);
 
-    m_bottomPIDController.setP(ShooterConstants.kBottomP  ,0);
-    m_bottomPIDController.setI(ShooterConstants.kBottomI  ,0);
-    m_bottomPIDController.setD(ShooterConstants.kBottomD  ,0);
+    m_bottomPIDController.setP(ShooterConstants.kBottomP,0);
+    m_bottomPIDController.setI(ShooterConstants.kBottomI,0);
+    m_bottomPIDController.setD(ShooterConstants.kBottomD,0);
     m_bottomPIDController.setFF(ShooterConstants.kBottomFF,0);
     m_bottomPIDController.setOutputRange(-1, 1,0);
 
-    m_topPIDController.setP(ShooterConstants.kTopP  ,0);
-    m_topPIDController.setI(ShooterConstants.kTopI  ,0);
-    m_topPIDController.setD(ShooterConstants.kTopD  ,0);
+    m_topPIDController.setP(ShooterConstants.kTopP,0);
+    m_topPIDController.setI(ShooterConstants.kTopI,0);
+    m_topPIDController.setD(ShooterConstants.kTopD,0);
     m_topPIDController.setFF(ShooterConstants.kTopFF,0);
     m_topPIDController.setOutputRange(-1, 1,0);
     
-    m_bottomPIDController.setP(ShooterConstants.kBottomP  ,1);
-    m_bottomPIDController.setI(ShooterConstants.kBottomI  ,1);
-    m_bottomPIDController.setD(ShooterConstants.kBottomD  ,1);
+    m_bottomPIDController.setP(ShooterConstants.kBottomP,1);
+    m_bottomPIDController.setI(ShooterConstants.kBottomI,1);
+    m_bottomPIDController.setD(ShooterConstants.kBottomD,1);
     m_bottomPIDController.setFF(ShooterConstants.kBottomFF,1);
     m_bottomPIDController.setOutputRange(-1, 1,1);
 
-    m_topPIDController.setP(ShooterConstants.kTopP  ,1);
-    m_topPIDController.setI(ShooterConstants.kTopI  ,1);
-    m_topPIDController.setD(ShooterConstants.kTopD  ,1);
+    m_topPIDController.setP(ShooterConstants.kTopP,1);
+    m_topPIDController.setI(ShooterConstants.kTopI,1);
+    m_topPIDController.setD(ShooterConstants.kTopD,1);
     m_topPIDController.setFF(ShooterConstants.kTopFF,1);
     m_topPIDController.setOutputRange(-1, 1,1);
 

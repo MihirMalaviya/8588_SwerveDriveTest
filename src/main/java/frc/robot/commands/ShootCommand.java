@@ -17,7 +17,7 @@ public class ShootCommand extends SequentialCommandGroup {
         Intake intake = RobotContainer.m_intake;
         Indexing indexing = RobotContainer.m_indexing;
         Shooter shooter = RobotContainer.m_shooter;
-        Wrist wrist = RobotContainer.m_wrist;
+        // Wrist wrist = RobotContainer.m_wrist;
 
         addRequirements(intake, indexing, shooter);
 
@@ -25,19 +25,19 @@ public class ShootCommand extends SequentialCommandGroup {
         final double waitTime   = 1.0; // seconds
 
         addCommands(
-            new InstantCommand(intake::stop),
+            new InstantCommand(intake::stop), // reset everything just in case
             new InstantCommand(indexing::stop),
             new InstantCommand(shooter::stop),
 
-            new InstantCommand(shooter::shoot),
-            new InstantCommand(() -> wrist.setWristGoalCommand(
-                RobotContainer.scoringArea == ScoringArea.SPEAKER 
-                ? RobotContainer.speakerLookupTable.getAngleFromDistance(RobotContainer.distanceFromTarget) 
-                : RobotContainer.ampLookupTable.getAngleFromDistance(RobotContainer.distanceFromTarget))),
-            new WaitCommand(windUpTime),
-            new InstantCommand(indexing::shoot),
-            new WaitCommand(waitTime),
-            new InstantCommand(indexing::stop),
+            new InstantCommand(shooter::shoot), // wind up shooter
+            // new InstantCommand(() -> wrist.setWristGoalCommand(
+            //     RobotContainer.scoringArea == ScoringArea.SPEAKER 
+            //     ? RobotContainer.speakerLookupTable.getAngleFromDistance(RobotContainer.distanceFromTarget) 
+            //     : RobotContainer.ampLookupTable.getAngleFromDistance(RobotContainer.distanceFromTarget))),
+            new WaitCommand(windUpTime), // wait till it is fast enough
+            new InstantCommand(indexing::shoot), // feed in the note
+            new WaitCommand(waitTime), // wait
+            new InstantCommand(indexing::stop), // stop
             new InstantCommand(shooter::stop)
         );
         indexing.setLoaded(false);

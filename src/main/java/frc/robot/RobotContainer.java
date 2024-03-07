@@ -9,6 +9,10 @@ import org.photonvision.PhotonCamera;
 import edu.wpi.first.util.datalog.DataLog;
 import edu.wpi.first.util.datalog.DoubleLogEntry;
 import edu.wpi.first.wpilibj.DataLogManager;
+import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStation.Alliance;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.InstantCommand;
 // import edu.wpi.first.wpilibj2.command.button.CommandJoystick;
@@ -17,17 +21,20 @@ import edu.wpi.first.wpilibj2.command.button.Trigger;
 import frc.robot.Constants.OperatorConstants;
 import frc.robot.Constants.VisionConstants;
 import frc.robot.commands.AimbotDrive;
-import frc.robot.commands.DefaultDrive;
+// import frc.robot.commands.DefaultDrive;
 import frc.robot.commands.IntakeCommand;
 import frc.robot.commands.PurgeCommand;
 import frc.robot.commands.ShootCommand;
 import frc.robot.commands.StopCommand;
+import frc.robot.commands.WristAimbot;
 import frc.robot.subsystems.Indexing;
 import frc.robot.subsystems.Intake;
 import frc.robot.subsystems.Shooter;
 import frc.robot.subsystems.SwerveSubsystem;
 import frc.robot.subsystems.Wrist;
 import frc.robot.utils.LookupTable;
+import frc.robot.auto.TestAuto;
+// import frc.robot.auto.AutoController.autoRoutines;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -57,6 +64,7 @@ public class RobotContainer {
   // The robot's subsystems and commands are defined here...
   public static final SwerveSubsystem m_Swerb = new SwerveSubsystem();
   public static final PhotonCamera m_camera = new PhotonCamera(VisionConstants.CAMERA_NAME);
+  public static final PhotonCamera m_noteCamera = new PhotonCamera("notes");
 
   public static final Intake m_intake = new Intake();
   public static final Indexing m_indexing = new Indexing();
@@ -79,6 +87,10 @@ public class RobotContainer {
   public static double distanceFromTarget = 1.0; // meters
   public static double shootAngle = 0.0; // radians
 
+  public static boolean isRedAlliance = true;
+
+  public static SendableChooser<String> autoSelector;
+
   /** The container for the robot. Contains subsystems, OI devices, and commands. */
   public RobotContainer() {
     // Configure the trigger bindings
@@ -91,6 +103,20 @@ public class RobotContainer {
     DataLog log = DataLogManager.getLog();
     shotDistance = new DoubleLogEntry(log, "/shots/distance");
     shotAngle = new DoubleLogEntry(log, "/shots/angle");
+
+    var ally = DriverStation.getAlliance();
+    isRedAlliance = ally.isPresent() 
+        ? ally.get() == Alliance.Red 
+        : true;
+  
+    // // create auto selector with each enum option
+    // autoSelector = new SendableChooser<>();
+    // autoSelector.setDefaultOption(autoRoutines.values()[0].toString(), autoRoutines.values()[0].toString());
+    // for (int i = 1; i < autoRoutines.values().length; i++) {
+    //     autoSelector.addOption(autoRoutines.values()[i].toString(), autoRoutines.values()[i].toString());
+    // }
+
+    // SmartDashboard.putData("Auton Selector", autoSelector);
   }
 
   /**
@@ -103,9 +129,10 @@ public class RobotContainer {
    * joysticks}.
    */
   private void configureBindings() {
-    // m_Swerb.setDefaultCommand(new Defa./,ultDrive());
+    // m_Swerb.setDefaultCommand(new DefaultDrive());
 
-    m_Swerb.setDefaultCommand(aimbotDrive);
+    // m_Swerb.setDefaultCommand(aimbotDrive);
+    m_wrist.setDefaultCommand(new WristAimbot());
 
     driverXbox.y()
       .onTrue(new InstantCommand(() -> m_Swerb.zeroYaw()));
@@ -163,7 +190,7 @@ public class RobotContainer {
    * @return the command to run in autonomous
    */
   public Command getAutonomousCommand() {
-    // TODO IMPLEMENT AN AUTON COMMAND!!!
-    return new InstantCommand(); // this is the equivalent of "do nothing"
+    // return new InstantCommand(); // this is the equivalent of "do nothing"
+    return new TestAuto();
   }
 }

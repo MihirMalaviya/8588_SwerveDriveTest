@@ -72,27 +72,27 @@ public class Indexing extends SubsystemBase {
     m_rightEncoder.setPositionConversionFactor(IndexingConstants.kRightEncoderPositionFactor);
     m_rightEncoder.setVelocityConversionFactor(IndexingConstants.kRightEncoderVelocityFactor);
 
-    m_leftPIDController.setP(IndexingConstants.kP  ,0);
-    m_leftPIDController.setI(IndexingConstants.kI  ,0);
-    m_leftPIDController.setD(IndexingConstants.kD  ,0);
+    m_leftPIDController.setP(IndexingConstants.kP,0);
+    m_leftPIDController.setI(IndexingConstants.kI,0);
+    m_leftPIDController.setD(IndexingConstants.kD,0);
     m_leftPIDController.setFF(IndexingConstants.kFF,0);
     m_leftPIDController.setOutputRange(-1, 1,0);
     
-    m_rightPIDController.setP(IndexingConstants.kP  ,0);
-    m_rightPIDController.setI(IndexingConstants.kI  ,0);
-    m_rightPIDController.setD(IndexingConstants.kD  ,0);
+    m_rightPIDController.setP(IndexingConstants.kP,0);
+    m_rightPIDController.setI(IndexingConstants.kI,0);
+    m_rightPIDController.setD(IndexingConstants.kD,0);
     m_rightPIDController.setFF(IndexingConstants.kFF,0);
     m_rightPIDController.setOutputRange(-1, 1,0);
     
-    m_leftPIDController.setP(IndexingConstants.kP  ,1);
-    m_leftPIDController.setI(IndexingConstants.kI  ,1);
-    m_leftPIDController.setD(IndexingConstants.kD  ,1);
+    m_leftPIDController.setP(IndexingConstants.kP,1);
+    m_leftPIDController.setI(IndexingConstants.kI,1);
+    m_leftPIDController.setD(IndexingConstants.kD,1);
     m_leftPIDController.setFF(IndexingConstants.kFF,1);
     m_leftPIDController.setOutputRange(-1, 1,1);
     
-    m_rightPIDController.setP(IndexingConstants.kP  ,1);
-    m_rightPIDController.setI(IndexingConstants.kI  ,1);
-    m_rightPIDController.setD(IndexingConstants.kD  ,1);
+    m_rightPIDController.setP(IndexingConstants.kP,1);
+    m_rightPIDController.setI(IndexingConstants.kI,1);
+    m_rightPIDController.setD(IndexingConstants.kD,1);
     m_rightPIDController.setFF(IndexingConstants.kFF,1);
     m_rightPIDController.setOutputRange(-1, 1,1);
 

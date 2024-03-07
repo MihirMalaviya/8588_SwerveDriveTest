@@ -49,6 +49,8 @@ public class Intake extends SubsystemBase {
     // Factory reset, so we get the SPARK MAX to a known state before configuring them. Useful in case a SPARK MAX is swapped out.
     m_intake.restoreFactoryDefaults();
 
+    m_intake.setInverted(true);
+
     m_intakeEncoder = m_intake.getEncoder();
     
     m_intakePIDController = m_intake.getPIDController();
@@ -59,27 +61,30 @@ public class Intake extends SubsystemBase {
     m_intakeEncoder.setPositionConversionFactor(IntakeConstants.kEncoderPositionFactor);
     m_intakeEncoder.setVelocityConversionFactor(IntakeConstants.kEncoderVelocityFactor);
 
-    m_intakePIDController.setP( IntakeConstants.kP ,0);
-    m_intakePIDController.setI( IntakeConstants.kI ,0);
-    m_intakePIDController.setD( IntakeConstants.kD ,0);
+    m_intakePIDController.setP(IntakeConstants.kP,0);
+    m_intakePIDController.setI(IntakeConstants.kI,0);
+    m_intakePIDController.setD(IntakeConstants.kD,0);
     m_intakePIDController.setFF(IntakeConstants.kFF,0);
     // m_intakePIDController.setOutputRange(IntakeConstants.kIntakeMinOutput, IntakeConstants.kIntakeMaxOutput, 0);
-    m_intakePIDController.setOutputRange(-1, 1, 0);
+    m_intakePIDController.setOutputRange(-1, 1,0);
 
     // second slot
-    m_intakePIDController.setP( IntakeConstants.kP ,1);
-    m_intakePIDController.setI( IntakeConstants.kI ,1);
-    m_intakePIDController.setD( IntakeConstants.kD ,1);
+    m_intakePIDController.setP(IntakeConstants.kP,1);
+    m_intakePIDController.setI(IntakeConstants.kI,1);
+    m_intakePIDController.setD(IntakeConstants.kD,1);
     m_intakePIDController.setFF(IntakeConstants.kFF,1);
-    m_intakePIDController.setOutputRange(-1, 1, 1);
+    m_intakePIDController.setOutputRange(-1, 1,1);
+
+    m_intakePIDController.setSmartMotionMaxVelocity(IntakeConstants.kMaxVel, 1);
+    // m_intakePIDController.setSmartMotionMaxAccel(IntakeConstants.kMaxAcc, 1);
+    
+    m_intake.setInverted(true);
 
     setCoast();
     m_intake.setSmartCurrentLimit(MotorContants.kMotorCurrentLimit);
 
     // Save the SPARK MAX configurations. If a SPARK MAX browns out during operation, it will maintain the above configurations.
     m_intake.burnFlash();
-
-    m_intakeEncoder.setPosition(0);
 
     setCoast();
 
@@ -136,6 +141,8 @@ public class Intake extends SubsystemBase {
     SmartDashboard.putString("Intake State", "intake-distance");
 
     // m_intake.set(.8);
+    
+    m_intakeEncoder.setPosition(0);
     m_intakePIDController.setReference(distance, CANSparkMax.ControlType.kPosition, 1);
   }
 

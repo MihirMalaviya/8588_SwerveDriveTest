@@ -18,9 +18,9 @@ public class IntakeCommand extends SequentialCommandGroup {
 
         addRequirements(intake, indexing, shooter);
 
-        final double intakeCurrentThreshold   = 20.0; // amps (i think)
-        final double indexingCurrentThreshold = 20.0; // amps (i think)
-        final double intakeDistance           = 1.0;  // meters 
+        final double intakeCurrentThreshold   = 10.0; // amps (i think)
+        final double indexingCurrentThreshold = 10.0; // amps (i think)
+        final double intakeDistance           = 50.0;  // meters 
         final double indexingDistance         = 0.3;  // meters 
         final double velocityThreshold        = 0.05; // meters / second
 
@@ -30,6 +30,7 @@ public class IntakeCommand extends SequentialCommandGroup {
             new InstantCommand(shooter::stop),
 
             new InstantCommand(intake::intake),
+            new WaitCommand(.5),
             new WaitUntilCommand(() -> intake.getCurrent() > intakeCurrentThreshold), // intake until it hits intake and intake gets a current spike
             new InstantCommand(() -> intake.intakeDistance(intakeDistance)), // take it in for a certain distance
             new WaitUntilCommand(() -> indexing.getCurrent() > indexingCurrentThreshold), // wait until it hits indexing and indexing gets a current spike

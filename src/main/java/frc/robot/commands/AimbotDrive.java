@@ -5,8 +5,6 @@
 package frc.robot.commands;
 
 
-import static frc.robot.Constants.VisionConstants;
-
 import java.util.Optional;
 
 import org.photonvision.PhotonCamera;
@@ -15,6 +13,7 @@ import org.photonvision.targeting.PhotonTrackedTarget;
 
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.filter.SlewRateLimiter;
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.util.Units;
@@ -25,8 +24,9 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import frc.robot.Constants;
 import frc.robot.Constants.DriveConstants;
-import frc.robot.RobotContainer.ScoringArea;
+import frc.robot.Constants.VisionConstants;
 import frc.robot.RobotContainer;
+import frc.robot.RobotContainer.ScoringArea;
 
 /** An example command that uses an example subsystem. */
 public class AimbotDrive extends Command {
@@ -47,13 +47,13 @@ public class AimbotDrive extends Command {
   SlewRateLimiter wRateLimiterDriving = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
   
   // seperate in case we decide 
-  SlewRateLimiter xRateLimiterAimbot = new SlewRateLimiter(DriveConstants.kXYSlewRate);
-  SlewRateLimiter yRateLimiterAimbot = new SlewRateLimiter(DriveConstants.kXYSlewRate);
-  SlewRateLimiter wRateLimiterAimbot = new SlewRateLimiter(DriveConstants.kRotationalSlewRate);
+  SlewRateLimiter xRateLimiterAimbot = new SlewRateLimiter(2.0 * DriveConstants.kXYSlewRate);
+  SlewRateLimiter yRateLimiterAimbot = new SlewRateLimiter(2.0 * DriveConstants.kXYSlewRate);
+  SlewRateLimiter wRateLimiterAimbot = new SlewRateLimiter(2.0 * DriveConstants.kRotationalSlewRate);
 
   PhotonCamera m_camera = RobotContainer.m_camera;
   CommandXboxController m_controller = RobotContainer.driverXbox;
-
+  
   // double shootAngle = 0.0; // radians
   double range = 1.0; // meters
   double goalRange = 2.0; // meters
@@ -70,6 +70,10 @@ public class AimbotDrive extends Command {
     // Vision-alignment mode
     // Query the latest result from PhotonVision
     var result = m_camera.getLatestResult();
+
+    double vx = 0.0;
+    double vy = 0.0;
+    double vw = 0.0;
 
     Optional<Alliance> alliance = DriverStation.getAlliance();
     boolean isRed = alliance.isPresent() 
@@ -134,6 +138,8 @@ public class AimbotDrive extends Command {
           RobotContainer.scoringArea = ScoringArea.SPEAKER;
           targetHeight = Units.inchesToMeters(57.13);
           goalRange = 2.0;
+
+          
           break;
         case 5: // amp
         case 6:
@@ -168,74 +174,40 @@ public class AimbotDrive extends Command {
 
       // Also calculate angular power
       // (This rotationSpeed must be positive to turn counter-clockwise.)
-      rotationSpeed = turnController.calculate(result.getBestTarget().getYaw(), 0);
+      rotationSpeed = turnController.calculate(RobotContainer.scoringArea == ScoringArea.SPEAKER  
+          ? PhotonUtils.getYawToPose(RobotContainer.m_Swerb.getPose(), isRed ? new Pose2d(RobotContainer.m_Swerb.redSpeakerPos.getX(),RobotContainer.m_Swerb.redSpeakerPos.getY(), new Rotation2d())
+                                                                             : new Pose2d(RobotContainer.m_Swerb.blueSpeakerPos.getX(),RobotContainer.m_Swerb.blueSpeakerPos.getY(), new Rotation2d())).getRadians()
+          : result.getBestTarget().getYaw()
+          , 0);
 
-      double vx = xRateLimiterAimbot.calculate(Math.cos(forwardSpeed));
-      double vy = yRateLimiterAimbot.calculate(Math.sin(forwardSpeed));
-      double vw = wRateLimiterAimbot.calculate(rotationSpeed);
-      
-      // Apply slew rate limits
-      vx = xRateLimiterAimbot.calculate(vx);
-      vy = yRateLimiterAimbot.calculate(vy);
-      vw = wRateLimiterAimbot.calculate(vw);
+      vx = xRateLimiterAimbot.calculate(Math.cos(forwardSpeed));
+      vy = yRateLimiterAimbot.calculate(Math.sin(forwardSpeed));
+      vw = wRateLimiterAimbot.calculate(rotationSpeed);
 
-      SmartDashboard.putNumber("Vx", vx);
-      SmartDashboard.putNumber("Vy", vy);
-      SmartDashboard.putNumber("Vw", vw);
-
-      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
-      RobotContainer.m_Swerb.drive(speeds);
         
     // } else if (m_controller.getHID().getAButton()) { // we are still intending to search
     //   // rn this just stops the robot but we might want it to look at some target position or sm
 
-    //   double vx = 0.0;
-    //   double vy = 0.0;
-    //   double vw = 0.0;
-      
-    //   // Apply slew rate limits (this isnt nessecary but its fine)
-    //   xRateLimiterDriving.reset(vx);
-    //   yRateLimiterDriving.reset(vy);
-    //   wRateLimiterDriving.reset(vw);
-
-    //   SmartDashboard.putNumber("Vx", vx);
-    //   SmartDashboard.putNumber("Vy", vy);
-    //   SmartDashboard.putNumber("Vw", vw);
-
-    //   ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
-    //   RobotContainer.m_Swerb.drive(speeds);
-
     } else { // no target found (just drive normally)
       double maxSpeed = Constants.DriveConstants.kMaxLinearSpeed;
-      double vx = m_controller.getRawAxis(0) * maxSpeed;
-      double vy = m_controller.getRawAxis(1) * maxSpeed;
-      double vw = m_controller.getRawAxis(4) * 0.1;
+      vx = m_controller.getRawAxis(0) * maxSpeed;
+      vy = m_controller.getRawAxis(1) * maxSpeed;
+      vw = m_controller.getRawAxis(4) * 0.1;
       
       // Apply slew rate limits
       vx = xRateLimiterDriving.calculate(vx);
       vy = yRateLimiterDriving.calculate(vy);
       vw = wRateLimiterDriving.calculate(vw);
-
-      SmartDashboard.putNumber("Vx", vx);
-      SmartDashboard.putNumber("Vy", vy);
-      SmartDashboard.putNumber("Vw", vw);
-
-      ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
-      RobotContainer.m_Swerb.drive(speeds);
     }
-
-    // if (m_controller.getHID().getBButtonReleased()) switch (scoringArea) {
-    //   case SPEAKER:
-    //     shootAngle = speakerLookupTable.getAngleFromDistance(range);
-    //     break;
-    //   case AMP:
-    //     shootAngle = ampLookupTable.getAngleFromDistance(range);
-    //     break;
-    // }
     
     RobotContainer.distanceFromTarget = range;
-    // RobotContainer.shootAngle = shootAngle;
 
+    SmartDashboard.putNumber("Vx", vx);
+    SmartDashboard.putNumber("Vy", vy);
+    SmartDashboard.putNumber("Vw", vw);
+
+    ChassisSpeeds speeds = ChassisSpeeds.fromFieldRelativeSpeeds(vy, vx, vw, Rotation2d.fromDegrees(-RobotContainer.m_Swerb.getYaw()));
+    RobotContainer.m_Swerb.drive(speeds);
   }
 
   // Returns true when the command should end.

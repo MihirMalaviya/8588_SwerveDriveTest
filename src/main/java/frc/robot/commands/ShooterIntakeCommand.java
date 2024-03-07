@@ -27,6 +27,10 @@ public class ShooterIntakeCommand extends SequentialCommandGroup {
         final double velocityThreshold        = 0.05; // meters / second
 
         addCommands(
+            new InstantCommand(intake::stop),
+            new InstantCommand(indexing::stop),
+            new InstantCommand(shooter::stop),
+            
             new InstantCommand(wrist::setWristGoalDefaultCommand),
             new InstantCommand(shooter::shooterIntake),
             new WaitUntilCommand(() -> shooter.getCurrent() > shooterCurrentThreshold), // intake until it hits intake and intake gets a current spike
